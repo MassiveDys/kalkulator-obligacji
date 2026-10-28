@@ -1,4 +1,4 @@
-/* Wykresy canvas: drabina zapadalności i wartość oszczędności. Bez zależności. */
+/* Wykresy canvas: rejestr wykresów, wykresy liniowe i słupkowe. Bez zależności. */
 (function (root) {
   "use strict";
 
@@ -8,13 +8,12 @@
     grid: "#dce6f1",
     muted: "#68798b",
     capital: "#8a9bb0",
-    depositBg: "rgba(234, 241, 248, 0.75)",
-    maturityBg: "rgba(234, 246, 238, 0.8)",
-    profitFill: "rgba(31, 157, 85, 0.16)",
-    capitalFill: "rgba(111, 156, 196, 0.13)",
+    a: "#1f4e79",
+    b: "#c2410c",
+    c: "#7c3aed",
   };
 
-  const state = { result: null, depositYears: 0, benchmarks: [], plan: "monthly" };
+  const charts = new Map();
 
   function plNumber(value, decimals) {
     return new Intl.NumberFormat("pl-PL", {
@@ -46,7 +45,7 @@
     return nice * base;
   }
 
-  function setupCanvas(canvas) {
+  function setup(canvas) {
     if (!canvas) return null;
     const rect = canvas.getBoundingClientRect();
     const width = Math.round(rect.width);
@@ -56,22 +55,22 @@
     canvas.width = Math.round(width * dpr);
     canvas.height = Math.round(height * dpr);
     const ctx = canvas.getContext("2d");
+    if (!ctx) return null;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, width, height);
     return { ctx, width, height };
   }
 
-  function computeFrame(width, height, seriesMax) {
-    const pad = { left: 56, right: 12, top: 12, bottom: 28 };
+  function frameFor(width, height, maxValue) {
+    const pad = { left: 58, right: 14, top: 14, bottom: 28 };
     const plotWidth = Math.max(10, width - pad.left - pad.right);
     const plotHeight = Math.max(10, height - pad.top - pad.bottom);
     const ticks = 5;
-    const step = niceStep((seriesMax > 0 ? seriesMax : 1) / ticks);
-    const yMax = step * ticks;
-    return { pad, plotWidth, plotHeight, yMax, ticks };
+    const step = niceStep((maxValue > 0 ? maxValue : 100) / ticks);
+    return { pad, plotWidth, plotHeight, ticks, yMax: step * ticks };
   }
 
-  function drawGrid(ctx, frame) {
+  function drawGrid(ctx, frame, frameCfg) {
     const { pad, plotWidth, plotHeight, yMax, ticks } = frame;
     ctx.save();
     ctx.strokeStyle = COLORS.grid;
@@ -81,7 +80,6 @@
     ctx.textAlign = "right";
     ctx.textBaseline = "middle";
     ctx.font = '11px "Segoe UI", system-ui, sans-serif';
-
     for (let i = 0; i <= ticks; i += 1) {
       const value = (yMax / ticks) * i;
       const y = pad.top + plotHeight - (value / yMax) * plotHeight;
@@ -92,211 +90,263 @@
       ctx.fillText(axisMoney(value), pad.left - 8, y);
     }
     ctx.restore();
+    if (frameCfg && frameCfg.xTitle) {
+      ctx.save();
+      ctx.fillStyle = COLORS.muted;
+      ctx.font = '11px "Segoe UI", system-ui, sans-serif';
+      ctx.textAlign = "right";
+      ctx.textBaseline = "bottom";
+      ctx.fillText(frameCfg.xTitle, pad.left + plotWidth, frameCfg.height - 2);
+      ctx.restore();
+    }
   }
 
   function drawXLabels(ctx, frame, years, xFor) {
-    const count = years.length;
-    if (!count) return;
-    const step = Math.max(1, Math.ceil(count / 8));
+    if (!years.length) return;
+    const step = Math.max(1, Math.ceil(years.length / 9));
     const yBase = frame.pad.top + frame.plotHeight;
     ctx.save();
     ctx.fillStyle = COLORS.muted;
     ctx.textAlign = "center";
     ctx.textBaseline = "top";
     ctx.font = '11px "Segoe UI", system-ui, sans-serif';
-
     years.forEach((year, index) => {
-      const isLast = index === count - 1;
+      const isLast = index === years.length - 1;
       if (index !== 0 && !isLast && year % step !== 0) return;
       ctx.fillText(String(year), xFor(year), yBase + 8);
     });
     ctx.restore();
   }
 
-  function drawLadder(result) {
-    const setup = setupCanvas(document.getElementById("chart-ladder"));
-    if (!setup) return;
-    const { ctx, width, height } = setup;
-    const rows = result.rows;
-    if (!rows.length) return;
+  /* ----------------------------------------------------------- liniowy */
+  function drawLineChart(canvas, cfg) {
+    const prepared = setup(canvas);
+    if (!prepared) return;
+    const { ctx, width, height } = prepared;
+    const years = (cfg.years || []).map(Number);
+    if (years.length < 2) return;
 
-    const principal = rows.map((r) => r.maturedPrincipal);
-    const interest = rows.map((r) => Math.max(0, r.maturedInterest));
-    const totals = principal.map((p, i) => p + interest[i]);
-    const maxValue = Math.max(0, ...totals);
-    const frame = computeFrame(width, height, maxValue * 1.18);
+    const values = [];
+    (cfg.series || []).forEach((s) => (s.values || []).forEach((v) => values.push(v)));
+    (cfg.areas || []).forEach((area) => {
+      (area.top || []).forEach((v) => values.push(v));
+      (area.bottom || []).forEach((v) => values.push(v));
+    });
+    const maxValue = Math.max(1, ...values.filter((v) => Number.isFinite(v)));
+    const frame = frameFor(width, height, maxValue * 1.08);
     const { pad, plotWidth, plotHeight, yMax } = frame;
-    const count = rows.length;
-    const xFor = (year) => pad.left + (plotWidth * (year - 0.3)) / (count + 0.4);
-    const phaseEnd = state.plan === "lump" ? 0 : Math.min(state.depositYears, result.years);
+    const minYear = years[0];
+    const maxYear = years[years.length - 1];
+    const xFor = (year) =>
+      pad.left + (plotWidth * (year - minYear)) / Math.max(1e-9, maxYear - minYear);
+    const yFor = (value) =>
+      pad.top + plotHeight - (yMax > 0 ? (value / yMax) * plotHeight : 0);
 
-    // tło faz
-    ctx.save();
-    if (phaseEnd > 0) {
-      ctx.fillStyle = COLORS.depositBg;
-      ctx.fillRect(
-        xFor(0.5),
-        pad.top,
-        Math.max(0, xFor(phaseEnd + 0.5) - xFor(0.5)),
-        plotHeight
-      );
+    if (cfg.bands) {
+      ctx.save();
+      cfg.bands.forEach((band) => {
+        if (band.from === band.to) return;
+        ctx.fillStyle = band.color;
+        const x1 = xFor(Math.max(minYear, band.from));
+        const x2 = xFor(Math.min(maxYear, band.to));
+        ctx.fillRect(x1, pad.top, Math.max(0, x2 - x1), plotHeight);
+      });
+      ctx.restore();
     }
-    ctx.fillStyle = COLORS.maturityBg;
-    ctx.fillRect(
-      xFor(phaseEnd + 0.5),
-      pad.top,
-      Math.max(0, xFor(count + 0.5) - xFor(phaseEnd + 0.5)),
-      plotHeight
-    );
-    ctx.restore();
 
-    drawGrid(ctx, frame);
-
-    const barWidth = Math.max(2, Math.min(30, (plotWidth / count) * 0.72));
-    const baseY = pad.top + plotHeight;
-
-    rows.forEach((row, index) => {
-      const x = xFor(row.year) - barWidth / 2;
-      const hPrincipal = yMax > 0 ? (principal[index] / yMax) * plotHeight : 0;
-      const hInterest = yMax > 0 ? (interest[index] / yMax) * plotHeight : 0;
-
-      if (hPrincipal > 0.2) {
-        ctx.fillStyle = COLORS.accent;
-        ctx.fillRect(x, baseY - hPrincipal, barWidth, hPrincipal);
-      }
-      if (hInterest > 0.2) {
-        ctx.fillStyle = COLORS.green;
-        ctx.fillRect(x, baseY - hPrincipal - hInterest, barWidth, hInterest);
-      }
-    });
-
-    drawXLabels(ctx, frame, rows.map((r) => r.year), xFor);
-  }
-
-  function drawWealth(result) {
-    const setup = setupCanvas(document.getElementById("chart-wealth"));
-    if (!setup) return;
-    const { ctx, width, height } = setup;
-    const rows = result.rows;
-    if (!rows.length) return;
-
-    const maxValue = Math.max(
-      0,
-      ...rows.map((r) => Math.max(r.net, r.cumulativeDeposits)),
-      ...state.benchmarks.flatMap((b) => b.values || [])
-    );
-    const frame = computeFrame(width, height, maxValue * 1.08);
-    const { pad, plotWidth, plotHeight, yMax } = frame;
-    const count = rows.length;
-    const points = [{ year: 0, net: 0, deposits: 0 }].concat(
-      rows.map((r) => ({ year: r.year, net: r.net, deposits: r.cumulativeDeposits }))
-    );
-    const xFor = (year) => pad.left + (plotWidth * year) / (count + 0.3);
-    const yFor = (value) => pad.top + plotHeight - (yMax > 0 ? (value / yMax) * plotHeight : 0);
-    const baseY = pad.top + plotHeight;
-
-    // obszar zysku: między wartością netto a wpłatami
-    ctx.save();
-    ctx.beginPath();
-    points.forEach((p, i) => {
-      const x = xFor(p.year);
-      const y = yFor(p.net);
-      if (i === 0) ctx.moveTo(x, y);
-      else ctx.lineTo(x, y);
-    });
-    for (let i = points.length - 1; i >= 0; i -= 1) {
-      ctx.lineTo(xFor(points[i].year), yFor(points[i].deposits));
-    }
-    ctx.closePath();
-    ctx.fillStyle = COLORS.profitFill;
-    ctx.fill();
-
-    // obszar wpłaconego kapitału
-    ctx.beginPath();
-    ctx.moveTo(xFor(0), baseY);
-    points.forEach((p) => ctx.lineTo(xFor(p.year), yFor(p.deposits)));
-    ctx.lineTo(xFor(points[points.length - 1].year), baseY);
-    ctx.closePath();
-    ctx.fillStyle = COLORS.capitalFill;
-    ctx.fill();
-    ctx.restore();
-
-    drawGrid(ctx, frame);
-
-    // linia wpłat
-    ctx.save();
-    ctx.beginPath();
-    points.forEach((p, i) => {
-      const x = xFor(p.year);
-      const y = yFor(p.deposits);
-      if (i === 0) ctx.moveTo(x, y);
-      else ctx.lineTo(x, y);
-    });
-    ctx.strokeStyle = COLORS.capital;
-    ctx.lineWidth = 1.4;
-    ctx.setLineDash([5, 4]);
-    ctx.stroke();
-    ctx.restore();
-
-    // linie benchmarków (identyczny plan wpłat)
-    state.benchmarks.forEach((bench) => {
-      if (!bench.values || !bench.values.length) return;
+    (cfg.areas || []).forEach((area) => {
+      const top = area.top || [];
+      const bottom = area.bottom || [];
+      if (!top.length) return;
       ctx.save();
       ctx.beginPath();
-      bench.values.forEach((value, index) => {
-        const x = xFor(index + 1);
+      top.forEach((value, index) => {
+        const x = xFor(years[index]);
         const y = yFor(value);
         if (index === 0) ctx.moveTo(x, y);
         else ctx.lineTo(x, y);
       });
-      ctx.strokeStyle = bench.color;
-      ctx.lineWidth = 1.9;
-      ctx.lineJoin = "round";
-      ctx.setLineDash([]);
-      ctx.stroke();
+      for (let i = bottom.length - 1; i >= 0; i -= 1) {
+        ctx.lineTo(xFor(years[Math.min(i, years.length - 1)]), yFor(bottom[i]));
+      }
+      ctx.closePath();
+      ctx.fillStyle = area.color;
+      ctx.fill();
       ctx.restore();
     });
 
-    // linia wartości netto
-    ctx.save();
-    ctx.beginPath();
-    points.forEach((p, i) => {
-      const x = xFor(p.year);
-      const y = yFor(p.net);
-      if (i === 0) ctx.moveTo(x, y);
-      else ctx.lineTo(x, y);
-    });
-    ctx.strokeStyle = COLORS.accent;
-    ctx.lineWidth = 2.2;
-    ctx.lineJoin = "round";
-    ctx.stroke();
+    drawGrid(ctx, frame);
+    drawXLabels(ctx, frame, years, xFor);
 
-    if (count <= 30) {
-      ctx.fillStyle = COLORS.accent;
-      points.forEach((p) => {
-        if (p.year === 0) return;
-        ctx.beginPath();
-        ctx.arc(xFor(p.year), yFor(p.net), 2.6, 0, Math.PI * 2);
-        ctx.fill();
+    (cfg.series || []).forEach((s) => {
+      if (!s.values || s.values.length < 2) return;
+      ctx.save();
+      ctx.beginPath();
+      s.values.forEach((value, index) => {
+        const x = xFor(years[index]);
+        const y = yFor(value);
+        if (index === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
       });
-    }
-    ctx.restore();
-
-    drawXLabels(ctx, frame, rows.map((r) => r.year), xFor);
+      ctx.strokeStyle = s.color || COLORS.accent;
+      ctx.lineWidth = s.width || 2.2;
+      ctx.lineJoin = "round";
+      ctx.lineCap = "round";
+      ctx.setLineDash(s.dash || []);
+      ctx.stroke();
+      if (s.dots) {
+        ctx.fillStyle = s.color || COLORS.accent;
+        s.values.forEach((value, index) => {
+          if (index === 0 && s.skipFirstDot) return;
+          ctx.beginPath();
+          ctx.arc(xFor(years[index]), yFor(value), 2.4, 0, Math.PI * 2);
+          ctx.fill();
+        });
+      }
+      ctx.restore();
+    });
   }
 
-  function render(result, depositYears, options = {}) {
-    state.result = result;
-    state.depositYears = depositYears;
-    state.benchmarks = options.benchmarks || [];
-    state.plan = options.plan || "monthly";
-    redraw();
+  /* ---------------------------------------------------------- słupkowy */
+  function drawBarChart(canvas, cfg) {
+    const prepared = setup(canvas);
+    if (!prepared) return;
+    const { ctx, width, height } = prepared;
+    const years = (cfg.years || []).map(Number);
+    if (!years.length) return;
+
+    const totals = years.map((_, index) =>
+      (cfg.stacks || []).reduce((sum, stack) => sum + (Number(stack.values[index]) || 0), 0)
+    );
+    const maxValue = Math.max(100, ...totals);
+    const frame = frameFor(width, height, maxValue * 1.18);
+    const { pad, plotWidth, plotHeight, yMax } = frame;
+    const count = years.length;
+    const xFor = (year) => pad.left + (plotWidth * (year - 0.3)) / (count + 0.4);
+    const baseY = pad.top + plotHeight;
+
+    if (cfg.bands) {
+      ctx.save();
+      cfg.bands.forEach((band) => {
+        ctx.fillStyle = band.color;
+        const x1 = xFor(Math.max(years[0], band.from));
+        const x2 = xFor(Math.min(years[count - 1] + 1, band.to));
+        ctx.fillRect(x1, pad.top, Math.max(0, x2 - x1), plotHeight);
+      });
+      ctx.restore();
+    }
+
+    drawGrid(ctx, frame);
+    const barWidth = Math.max(2, Math.min(30, (plotWidth / count) * 0.72));
+
+    years.forEach((year, index) => {
+      let yCursor = 0;
+      const x = xFor(year) - barWidth / 2;
+      (cfg.stacks || []).forEach((stack) => {
+        const value = Math.max(0, Number(stack.values[index]) || 0);
+        if (value <= 0) return;
+        const h = yMax > 0 ? (value / yMax) * plotHeight : 0;
+        if (h > 0.2) {
+          ctx.fillStyle = stack.color;
+          ctx.fillRect(x, baseY - yCursor - h, barWidth, h);
+        }
+        yCursor += h;
+      });
+    });
+
+    drawXLabels(ctx, frame, years, xFor);
+  }
+
+  function drawOne(id) {
+    const entry = charts.get(id);
+    const canvas = document.getElementById(id);
+    if (!entry || !canvas) return;
+    if (entry.type === "bar") drawBarChart(canvas, entry.cfg);
+    else drawLineChart(canvas, entry.cfg);
+  }
+
+  function bar(id, cfg) {
+    charts.set(id, { type: "bar", cfg });
+    drawOne(id);
+  }
+
+  function line(id, cfg) {
+    charts.set(id, { type: "line", cfg });
+    drawOne(id);
   }
 
   function redraw() {
-    if (!state.result) return;
-    drawLadder(state.result);
-    drawWealth(state.result);
+    charts.forEach((_, id) => drawOne(id));
+  }
+
+  /* --------------------------------------------- wykresy kalkulatora */
+  function render(result, depositYears, options = {}) {
+    if (!result) return;
+    const rows = result.rows || [];
+    if (rows.length) {
+      const years = rows.map((r) => r.year);
+      bar("chart-ladder", {
+        years,
+        bands: [
+          {
+            from: 0,
+            to: Math.min(depositYears, result.years),
+            color: "rgba(234, 241, 248, 0.75)",
+          },
+          {
+            from: Math.min(depositYears, result.years),
+            to: result.years + 1,
+            color: "rgba(234, 246, 238, 0.8)",
+          },
+        ],
+        stacks: [
+          { values: rows.map((r) => r.maturedPrincipal), color: COLORS.accent },
+          {
+            values: rows.map((r) => Math.max(0, r.maturedInterest)),
+            color: COLORS.green,
+          },
+        ],
+      });
+
+      const points = [{ year: 0, net: 0, deposits: 0 }].concat(
+        rows.map((r) => ({ year: r.year, net: r.net, deposits: r.cumulativeDeposits }))
+      );
+      const series = [
+        {
+          values: points.map((p) => p.deposits),
+          color: COLORS.capital,
+          width: 1.4,
+          dash: [5, 4],
+        },
+      ];
+      (options.benchmarks || []).forEach((bench) => {
+        if (!bench.values || !bench.values.length) return;
+        series.push({
+          values: [0].concat(bench.values),
+          color: bench.color,
+          width: 1.9,
+        });
+      });
+      series.push({
+        values: points.map((p) => p.net),
+        color: COLORS.accent,
+        width: 2.2,
+        dots: points.length <= 31,
+        skipFirstDot: true,
+      });
+
+      line("chart-wealth", {
+        years: points.map((p) => p.year),
+        areas: [
+          {
+            top: points.map((p) => p.net),
+            bottom: points.map((p) => p.deposits),
+            color: "rgba(31, 157, 85, 0.16)",
+          },
+        ],
+        series,
+      });
+    }
   }
 
   let resizeQueued = false;
@@ -311,14 +361,7 @@
 
   if (typeof window !== "undefined") {
     window.addEventListener("resize", queueRedraw);
-    if (typeof ResizeObserver !== "undefined") {
-      const observer = new ResizeObserver(queueRedraw);
-      const ladder = document.getElementById("chart-ladder");
-      const wealth = document.getElementById("chart-wealth");
-      if (ladder) observer.observe(ladder.parentElement);
-      if (wealth) observer.observe(wealth.parentElement);
-    }
   }
 
-  root.BondCharts = { render, redraw };
+  root.BondCharts = { render, redraw, bar, line };
 })(typeof globalThis !== "undefined" ? globalThis : this);

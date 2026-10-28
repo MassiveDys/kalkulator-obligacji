@@ -1,5 +1,15 @@
 # CHANGELOG — kalkulator-obligacji
 
+## [1.6.0] — 2026-10-28
+- Dodano zakładkę **Porównanie A/B**: dwa niezależne warianty (typ obligacji, tryb wpłat, kwota, horyzont, IKE, wcześniejszy wykup), wspólna inflacja i stopa NBP, tabela różnic w złotych i na wykresie.
+- Dodano zakładkę **Portfel**: do 8 pozycji z różnymi seriami i datami zakupu (drabina), reinwestycja wykupów w tę samą serię, harmonogram wykupów, wartość netto, IRR, tabela roczna i dwa wykresy. Presety „drabina 4-letnia” i „czysty EDO”.
+- Dodano zakładkę **Rentier**: symulacja stałej wypłaty miesięcznej z kapitału — ile lat wystarczy, łączne wypłaty, pozostały kapitał, podatek; wcześniejszy wykup z opłatą, gdy brakuje gotówki.
+- Dodano **wartości realne** w kalkulatorze: kafelki wartości netto i zysku w dzisiejszych złotówkach (dyskonto inflacją, wpłaty osobno).
+- Dodano **permalink stanu**: wszystkie parametry (także modułów) zapisują się w URL i `localStorage`; przyciski „Kopiuj link” i „Reset”.
+- Dodano **PWA/offline**: manifest, ikony SVG i service worker cache-first; aplikację można zainstalować, działa bez internetu.
+- Nowy wspólny moduł `ui.js` (formatowanie, stan, zakładki, schowek) i przepisane `charts.js` na rejestr wykresów liniowych/słupkowych.
+- Testy: 23/23 silnika (`node tools/test-web.mjs`) i 30/30 testów DOM (jsdom) — bez błędów w konsoli.
+
 ## [1.5.0] — 2026-10-28
 - Dodano opcję „Wcześniejszy wykup (przed terminem)” — wypłata na koniec horyzontu przed zapadalnością obligacji.
 - Dodano opłaty za przedterminowy wykup wg listów emisyjnych (emisje od 1.09.2024): EDO/ROD 3 zł, COI/ROS 2 zł, TOS 1 zł, DOR 0,70 zł, ROR 0,50 zł, OTS 0 zł (bez odsetek).

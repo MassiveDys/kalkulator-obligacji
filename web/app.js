@@ -9,7 +9,21 @@
     INFLATION_SCENARIOS,
     calculate,
     benchmarkSeries,
+    discount,
+    realDeposits,
   } = window.Bonds;
+
+  const {
+    fmtNumber,
+    fmtMoney,
+    fmtPercent,
+    parseNumber,
+    decimalText,
+    yearsText,
+    get: getSaved,
+    set: saveState,
+    toast,
+  } = window.BondUI;
 
   const PROFILE_LABELS = {
     EDO: "EDO · 10 lat · inflacja",
@@ -48,11 +62,12 @@
     nbp: document.getElementById("nbp"),
     ike: document.getElementById("ike"),
     early: document.getElementById("early"),
+    real: document.getElementById("real"),
+    calcButton: document.getElementById("calc-button"),
     earlyInfo: document.getElementById("early-info"),
     earlySummary: document.getElementById("early-summary"),
     earlyFeeValue: document.getElementById("early-fee-value"),
     earlyFeeDetail: document.getElementById("early-fee-detail"),
-    calcButton: document.getElementById("calc-button"),
     alert: document.getElementById("alert"),
     rows: document.getElementById("rows"),
     exportButton: document.getElementById("export-button"),
@@ -62,17 +77,15 @@
     tileNet: document.getElementById("tile-net"),
     tileProfit: document.getElementById("tile-profit"),
     tileIrr: document.getElementById("tile-irr"),
+    tileRealNet: document.getElementById("tile-real-net"),
+    tileRealProfit: document.getElementById("tile-real-profit"),
+    realNote: document.getElementById("real-note"),
     chartsSubtitle: document.getElementById("charts-subtitle"),
     legendPhase: document.getElementById("legend-phase"),
     legendWealth: document.getElementById("legend-wealth"),
     benchSp500: document.getElementById("bench-sp500"),
     benchWig20: document.getElementById("bench-wig20"),
     benchTax: document.getElementById("bench-tax"),
-    tabs: Array.from(document.querySelectorAll(".tab")),
-    panels: {
-      calc: document.getElementById("panel-calc"),
-      charts: document.getElementById("panel-charts"),
-    },
     planButtons: Array.from(document.querySelectorAll("#plan-switch button")),
     modeButtons: Array.from(document.querySelectorAll("#payout-switch button")),
   };
@@ -82,6 +95,7 @@
     plan: "monthly",
     last: null,
     silentTimer: 0,
+    restoring: false,
   };
 
   const scenarios = {
@@ -89,53 +103,12 @@
     inflation: { items: [], byKey: {}, placeholder: PROFILE_PLACEHOLDER_INFLATION },
   };
 
-  /* ------------------------------------------------------------ format */
-  const formatters = new Map();
-
-  function numberFormatter(decimals) {
-    if (!formatters.has(decimals)) {
-      formatters.set(
-        decimals,
-        new Intl.NumberFormat("pl-PL", {
-          minimumFractionDigits: decimals,
-          maximumFractionDigits: decimals,
-        })
-      );
-    }
-    return formatters.get(decimals);
-  }
-
-  function fmtNumber(value, decimals = 2) {
-    return numberFormatter(decimals).format(value).replace(/\u00A0/g, " ");
-  }
-
-  function fmtMoney(value, decimals = 2) {
-    return fmtNumber(value, decimals) + " zł";
-  }
-
-  function fmtPercent(value) {
-    return value.toFixed(2).replace(".", ",") + " %";
-  }
-
-  function parseNumber(text) {
-    const cleaned = String(text)
-      .trim()
-      .replace(/[\s\u00A0\u202F]/g, "")
-      .replace(",", ".");
-    if (cleaned === "") return NaN;
-    return Number(cleaned);
-  }
-
   function scenarioLabel(name, value) {
     return name + " (" + value.toFixed(2).replace(".", ",") + "%)";
   }
 
-  function decimalText(value) {
-    return value.toFixed(2).replace(".", ",");
-  }
-
   function termYearsText(profile) {
-    return String(profile.termYears).replace(".", ",");
+    return yearsText(profile.termYears);
   }
 
   /* --------------------------------------------------------- komunikaty */
@@ -376,6 +349,32 @@
     el.tileIrr.textContent = fmtPercent(result.irr * 100);
   }
 
+  function renderReal(result, inputs) {
+    const show = Boolean(el.real && el.real.checked);
+    document.querySelectorAll(".tile-real").forEach((tile) => {
+      tile.hidden = !show;
+    });
+    if (el.realNote) el.realNote.hidden = !show;
+    if (!show) return;
+
+    const realNet = discount(result.net, result.years, inputs.inflation);
+    const plan = {
+      mode: inputs.plan,
+      deposit: inputs.deposit,
+      years: Math.min(inputs.years, inputs.horizon),
+      amount: inputs.amount,
+    };
+    const depositsReal = realDeposits(plan, inputs.inflation);
+    el.tileRealNet.textContent = fmtMoney(realNet, 0);
+    el.tileRealProfit.textContent = fmtMoney(realNet - depositsReal, 0);
+    if (el.realNote) {
+      el.realNote.textContent =
+        "Wartości realne: nominalna wartość netto i zysk przeliczone na dzisiejsze złotówki przy inflacji " +
+        fmtPercent(inputs.inflation) +
+        " rocznie (wpłaty dyskontowane osobno, każda w swoim miesiącu).";
+    }
+  }
+
   function buildBenchmarks(inputs, result) {
     const tax = el.benchTax.checked;
     const plan = {
@@ -405,6 +404,7 @@
   function render(result, inputs) {
     renderTiles(result);
     renderTable(result);
+    renderReal(result, inputs);
 
     if (inputs.early) {
       el.earlySummary.hidden = false;
@@ -513,6 +513,7 @@
 
     clearAlert();
     render(result, inputs);
+    if (!state.restoring) saveState("calc", snapshot());
     return true;
   }
 
@@ -593,6 +594,14 @@
     lines.push(["Zysk netto", result.netProfit.toFixed(2)].join(";"));
     lines.push(["Opłata za wcześniejszy wykup", result.earlyFee.toFixed(2)].join(";"));
     lines.push(["Stopa netto (rocznie)", (result.irr * 100).toFixed(2) + "%"].join(";"));
+    if (inputs) {
+      lines.push(
+        [
+          "Wartość netto (dzisiejsze zł, inflacja " + inputs.inflation.toFixed(2) + "%)",
+          discount(result.net, result.years, inputs.inflation).toFixed(2),
+        ].join(";")
+      );
+    }
 
     const blob = new Blob(["\uFEFF" + lines.join("\r\n")], {
       type: "text/csv;charset=utf-8",
@@ -605,22 +614,6 @@
     anchor.click();
     anchor.remove();
     window.setTimeout(() => URL.revokeObjectURL(url), 1000);
-  }
-
-  /* ------------------------------------------------------------- zakładki */
-  function showTab(name) {
-    el.tabs.forEach((tab) => {
-      const active = tab.dataset.tab === name;
-      tab.classList.toggle("is-active", active);
-      tab.setAttribute("aria-selected", active ? "true" : "false");
-      tab.tabIndex = active ? 0 : -1;
-    });
-    Object.keys(el.panels).forEach((key) => {
-      el.panels[key].hidden = key !== name;
-    });
-    if (name === "charts") {
-      window.BondCharts.redraw();
-    }
   }
 
   /* --------------------------------------------------------------- tryb */
@@ -649,6 +642,71 @@
     el.yearsField.title = isLump ? "Nie dotyczy wpłaty jednorazowej" : "";
     el.lumpField.hidden = !isLump;
     el.lump.disabled = !isLump;
+  }
+
+  /* ---------------------------------------------------------- stan */
+  function snapshot() {
+    const inputs = readInputs();
+    return {
+      plan: state.plan,
+      mode: state.mode,
+      code: currentCode(),
+      deposit: el.deposit.value,
+      years: el.years.value,
+      amount: el.lump.value,
+      horizon: el.horizon.value,
+      rate1: inputs.error ? el.rate1.value : inputs.rate1,
+      margin: inputs.error ? el.margin.value : inputs.margin,
+      inflation: inputs.error ? el.inflation.value : inputs.inflation,
+      nbp: inputs.error ? el.nbp.value : inputs.nbp,
+      ike: el.ike.checked,
+      early: el.early.checked,
+      real: Boolean(el.real && el.real.checked),
+      bench: {
+        sp: el.benchSp500.checked,
+        wig: el.benchWig20.checked,
+        tax: el.benchTax.checked,
+      },
+    };
+  }
+
+  function restore(saved) {
+    if (!saved) return false;
+    state.restoring = true;
+    try {
+      setPlan(saved.plan === "lump" ? "lump" : "monthly");
+      setMode(saved.mode === "reinvest" ? "reinvest" : "payout");
+      const code = PROFILES[saved.code] ? saved.code : "EDO";
+      el.profile.value = code;
+      applyProfile(code, { silent: true });
+
+      if (saved.deposit !== undefined) el.deposit.value = String(saved.deposit).replace(".", ",");
+      if (saved.years !== undefined) el.years.value = String(saved.years);
+      if (saved.amount !== undefined) el.lump.value = String(saved.amount).replace(".", ",");
+      if (saved.horizon !== undefined) el.horizon.value = String(saved.horizon);
+
+      const setIfEnabled = (input, value, fallback) => {
+        const numeric = Number(value);
+        input.value = decimalText(Number.isFinite(numeric) ? numeric : fallback);
+      };
+      setIfEnabled(el.rate1, saved.rate1, PROFILES[code].defaultRate1);
+      setIfEnabled(el.margin, saved.margin, PROFILES[code].defaultMargin);
+      setIfEnabled(el.inflation, saved.inflation, 3.0);
+      setIfEnabled(el.nbp, saved.nbp, 5.75);
+
+      el.ike.checked = Boolean(saved.ike);
+      el.early.checked = Boolean(saved.early);
+      if (el.real) el.real.checked = Boolean(saved.real);
+      if (saved.bench) {
+        el.benchSp500.checked = saved.bench.sp !== false;
+        el.benchWig20.checked = saved.bench.wig !== false;
+        el.benchTax.checked = saved.bench.tax !== false;
+      }
+      updateEarlyInfo();
+      return true;
+    } finally {
+      state.restoring = false;
+    }
   }
 
   /* ------------------------------------------------------------- start */
@@ -700,6 +758,13 @@
       calculateAndRender(true);
     });
 
+    if (el.real) {
+      el.real.addEventListener("change", () => {
+        if (state.last) renderReal(state.last.result, state.last.inputs);
+        saveState("calc", snapshot());
+      });
+    }
+
     el.planButtons.forEach((button) => {
       button.addEventListener("click", () => {
         setPlan(button.dataset.plan);
@@ -715,32 +780,35 @@
     });
 
     [el.benchSp500, el.benchWig20, el.benchTax].forEach((box) => {
-      box.addEventListener("change", refreshBenchmarks);
+      box.addEventListener("change", () => {
+        refreshBenchmarks();
+        saveState("calc", snapshot());
+      });
     });
 
     el.exportButton.addEventListener("click", exportCsv);
-
-    el.tabs.forEach((tab) => {
-      tab.addEventListener("click", () => showTab(tab.dataset.tab));
-      tab.addEventListener("keydown", (event) => {
-        if (event.key !== "ArrowRight" && event.key !== "ArrowLeft") return;
-        event.preventDefault();
-        const index = el.tabs.indexOf(tab);
-        const next = event.key === "ArrowRight"
-          ? (index + 1) % el.tabs.length
-          : (index - 1 + el.tabs.length) % el.tabs.length;
-        el.tabs[next].focus();
-        showTab(el.tabs[next].dataset.tab);
-      });
-    });
+    el.calcButton.addEventListener("click", () => calculateAndRender(true));
   }
 
   populateProfiles();
   setMode("payout");
   setPlan("monthly");
-  applyProfile("EDO", { silent: true });
   el.profile.value = "EDO";
-  updateEarlyInfo();
+  applyProfile("EDO", { silent: true });
   wireEvents();
+
+  const saved = getSaved("calc");
+  if (saved) restore(saved);
   calculateAndRender(true);
+
+  window.BondCalc = {
+    snapshot,
+    get last() {
+      return state.last;
+    },
+    focus() {
+      if (el.deposit) el.deposit.focus();
+    },
+    toast,
+  };
 })();

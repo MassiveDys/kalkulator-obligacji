@@ -1,34 +1,25 @@
-# STATUS - kalkulator-obligacji
+﻿# STATUS - kalkulator-obligacji
 
-- **Stan:** wersja web gotowa i publiczna (wpłata jednorazowa, benchmarki, wcześniejszy wykup)
+- **Stan:** gotowe (Wersja Web: wszystkie 3 kierunki rozwoju wdrożone i opublikowane na GitHub Pages)
 - **Ostatnia zmiana:** 2026-10-28
-- **Następny krok:** zbierać uwagi; zmiany w `web/`, commit i push — Pages przebuduje się automatycznie
+- **Następny krok:** Zbieranie opinii użytkownika po wdrożeniu (porównywarka A/B, portfel/drabina, rentier, wartości realne, permalink, offline)
 
-## Publiczny link
-https://massivedys.github.io/kalkulator-obligacji/
+## Co działa
+- Samodzielna aplikacja .exe dla Windows (builds/kalkulator-obligacji.exe, v1.2)
+- Wersja Web na GitHub Pages: https://massivedys.github.io/kalkulator-obligacji/
+  - Opcja wcześniejszego (przedterminowego) wykupu obligacji przed końcem zapadalności (np. EDO 10L po 5 latach)
+  - Oficjalne stawki prowizji (od 1.09.2024: EDO 3 zł, ROD 3 zł, COI 2 zł, ROS 2 zł, TOS 1 zł, DOR 0,70 zł, ROR 0,50 zł)
+  - Ochrona kapitału (nominał nie spada poniżej 100 zł/szt., prowizja ograniczona do odsetek)
+  - Prawidłowe naliczanie podatku Belki (19% od zysku po odliczeniu opłaty) oraz wariant IKE (0% podatku)
+  - Wpłata jednorazowa i dopłaty comiesięczne
+  - Wykresy powrotu środków i benchmarki z S&P 500 / WIG20
+  - **Porównanie A/B** — dwa warianty obok siebie, tabela różnic w złotych i wykres wartości netto
+  - **Portfel / drabina** — do 8 pozycji (seria + kwota + miesiąc startu), reinwestycja w tę samą serię, harmonogram wykupów, IRR
+  - **Tryb rentierski** — stała wypłata miesięczna, ile lat wystarczy kapitału, wypłaty realne, podatek
+  - **Wartości realne** — wartość netto i zysk w dzisiejszych złotówkach (dyskonto inflacją)
+  - **Permalink stanu** — parametry w URL i `localStorage`, „Kopiuj link” / „Reset”
+  - **PWA/offline** — instalacja na telefonie, cache-first service worker
+  - Weryfikacja: 23/23 testy silnika (`node tools/test-web.mjs`), 30/30 testów DOM (jsdom), 0 błędów w konsoli, HTTP 200
 
-## Wersja web (`web/`)
-- `index.html`, `style.css`, `app.js`, `bonds.js`, `charts.js` — czysty HTML/CSS/JS, bez frameworków, CDN i zależności
-- tryb wpłat: **dopłaty comiesięczne** albo **wpłata jednorazowa**
-- **wcześniejszy wykup**: checkbox; wypłata następuje na koniec horyzontu, opłata wg typu obligacji, potrącana z odsetek do ich wysokości (kapitał 100 zł/szt. chroniony); OTS bez opłaty, ale bez odsetek
-- opłaty (emisje od 1.09.2024): EDO/ROD 3,00 zł, COI/ROS 2,00 zł, TOS 1,00 zł, DOR 0,70 zł, ROR 0,50 zł, OTS 0 zł
-- podatek Belki od odsetek po opłacie; IKE bez podatku; opłata zawsze widoczna w podsumowaniu, tabeli (kolumna + znacznik „wykup”) i CSV
-- wykresy canvas: drabina zapadalności, wartość majątku + benchmarki S&P 500 (~10,2%) i WIG20 (~7,5%), z przełącznikami
-- responsywność 320–1440 px
-- publikacja: GitHub Actions (`.github/workflows/pages.yml`) wdraża `web/` po pushu na `main`
-
-## Testy (2026-10-28)
-- 12 scenariuszy miesięcznych porównanych z Pythonem (`bonds.py`): identyczne (różnice < 1e-5)
-- 34/34 asercji w przeglądarce: 8 profili, wpłata jednorazowa, wcześniejszy wykup (EDO 5/10 lat), IKE, limit opłaty do odsetek, OTS, tabele, CSV, benchmarki, wykresy
-- 0 błędów konsoli; szerokości 320, 390 i 1200 px bez poziomego przewijania
-- oficjalne stawki opłat potwierdzone w słowniczku obligacjeskarbowe.pl
-
-## Co działa (desktop)
-- samodzielny `builds/kalkulator-obligacji.exe` (v1.2) z wykresami i testami PASS
-- źródła w `src/` (CustomTkinter + matplotlib), test dymny `--self-test`
-
-## Ograniczenia
-- wyniki szacunkowe według modelu (stałe stopy, bez prowizji i inflacji poza modelem)
-- model nie odwzorowuje dziennych zasad naliczania odsetek przy wykupie w trakcie okresu odsetkowego; wypłata następuje na koniec roku
-- „opłata nie większa niż odsetki” liczona per obligacja; przy zerowych odsetkach opłata wynosi 0
-- benchmarki to stałe średnie stopy zwrotu, nie prognoza
+## Otwarte problemy
+- Brak

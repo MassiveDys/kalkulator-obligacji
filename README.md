@@ -37,6 +37,15 @@ python -m http.server 8766
   opłata wg typu (EDO/ROD 3 zł, COI/ROS 2 zł, TOS 1 zł, DOR 0,70 zł, ROR 0,50 zł, OTS 0 zł) jest
   potrącana z odsetek, maks. do ich wysokości; podatek Belki liczony od odsetek po opłacie.
   Stawki potwierdzone w [słowniczku obligacjeskarbowe.pl](https://www.obligacjeskarbowe.pl/slowniczek/).
+- Wersja web: zakładka **Porównanie** — dwa warianty A/B obok siebie, tabela różnic (netto, zysk,
+  stopa zwrotu, podatki) i wykres wartości netto w czasie.
+- Wersja web: zakładka **Portfel** — drabina do 8 pozycji z różnymi seriami i miesiącami zakupu,
+  reinwestycja wykupów w tę samą serię, terminarz wykupów, IRR i wykresy.
+- Wersja web: zakładka **Rentier** — stała wypłata miesięczna, „na ile lat wystarczy kapitał”,
+  łączne wypłaty, pozostały kapitał i podatek; wcześniejszy wykup z opłatą przy braku gotówki.
+- Wersja web: **wartości realne** (po inflacji) — wartość netto i zysk w dzisiejszych złotówkach.
+- Wersja web: **permalink** — cały scenariusz w URL (`?d=…`) i w `localStorage`; „Kopiuj link” i „Reset”.
+- Wersja web: **PWA/offline** — manifest, ikony i service worker; instalacja na telefonie, praca bez sieci.
 
 ## Uruchomienie
 
@@ -84,10 +93,22 @@ builds\kalkulator-obligacji.exe --self-test builds\smoke-test.txt
 ## Struktura
 
 - `web/` — wersja web (HTML/CSS/JS), źródło publikacji na GitHub Pages
+  - `index.html`, `style.css` — układ i style (5 zakładek: Obliczenia, Porównanie, Portfel, Rentier, Wykresy)
+  - `bonds.js` — silnik: `calculate` (pojedyncza seria), `simulate` (portfel/drabina/rentier), dyskonto inflacyjne
+  - `app.js`, `compare.js`, `portfolio.js`, `rentier.js` — moduły interfejsu
+  - `ui.js` — formatowanie, stan w URL, zakładki, schowek, PWA
+  - `charts.js` — wykresy canvas (rejestr wykresów liniowych i słupkowych)
+  - `manifest.webmanifest`, `sw.js`, ikony SVG — tryb offline/PWA
 - `.github/workflows/pages.yml` — automatyczne wdrożenie `web/` na Pages
-- `src/bonds.py` — silnik obliczeniowy
+- `src/bonds.py` — silnik obliczeniowy wersji desktop
 - `src/app.py` — GUI (CustomTkinter) i tryb `--self-test`
 - `builds/` — plik .exe i raport testu (poza repozytorium)
 - `assets/` — ikona i zrzut referencyjny
+
+Testy wersji web:
+
+```powershell
+node tools\test-web.mjs
+```
 
 Repozytorium: https://github.com/MassiveDys/kalkulator-obligacji

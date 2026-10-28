@@ -461,6 +461,256 @@
     return values;
   }
 
+  /*
+   * Symulacja portfela / drabiny / wypłat rentierskich.
+   * config: {
+   *   positions: [{ code, amount, startMonth }],
+   *   horizonYears, inflation, nbp, ike, reinvest,
+   *   monthlyWithdrawal
+   * }
+   * Ten sam model naliczania co calculate(): miesięczne odsetki, roczna
+   * kapitalizacja lub wypłata kuponu, podatek Belki / IKE, opłaty przy
+   * awaryjnym wykupie na potrzeby wypłat.
+   */
+  function simulate(config) {
+    const cfg = config || {};
+    const horizonYears = Math.max(1, Math.trunc(cfg.horizonYears || 1));
+    const months = horizonYears * 12;
+    const inflation = Number.isFinite(Number(cfg.inflation)) ? Number(cfg.inflation) : 3.0;
+    const nbpRate = Number.isFinite(Number(cfg.nbp)) ? Number(cfg.nbp) : 5.75;
+    const taxFactor = cfg.ike ? 0.0 : BELKA;
+    const reinvest = cfg.reinvest !== false;
+    const withdrawal = Math.max(0, Number(cfg.monthlyWithdrawal) || 0);
+
+    let cash = 0.0;
+    let lots = [];
+    let totalDeposits = 0.0;
+    let totalWithdrawn = 0.0;
+    let taxPaid = 0.0;
+    let bondsBought = 0;
+    let depletionMonth = 0;
+    let annualDeposits = 0.0;
+    let annualInterest = 0.0;
+    let annualTax = 0.0;
+    let annualWithdrawals = 0.0;
+    let annualPrincipal = 0.0;
+    let annualMaturedInterest = 0.0;
+    const rows = [];
+    const flows = [];
+
+    const schedule = [];
+    let primaryCode = null;
+    (cfg.positions || []).forEach((position) => {
+      const profile = PROFILES[position && position.code];
+      const amount = Math.max(0, Number(position && position.amount) || 0);
+      if (!profile || amount <= 0) return;
+      if (!primaryCode) primaryCode = position.code;
+      schedule.push({
+        code: position.code,
+        amount,
+        month: Math.max(0, Math.min(months, Math.round(Number(position.startMonth) || 0))),
+      });
+    });
+
+    function buy(code, available, month) {
+      const profile = PROFILES[code];
+      if (!profile) return available;
+      const count = Math.floor((available + 1e-9) / NOMINAL);
+      if (count <= 0) return available;
+      for (let i = 0; i < count; i += 1) {
+        lots.push({
+          code,
+          startMonth: month,
+          termMonths: termMonths(profile),
+          rate1: profile.kind === "nbp"
+            ? nbpRate + profile.defaultMargin
+            : profile.defaultRate1,
+          laterRate: profile.kind === "inflacja"
+            ? inflation + profile.defaultMargin
+            : profile.kind === "nbp"
+              ? nbpRate + profile.defaultMargin
+              : profile.defaultRate1,
+          payout: profile.payout,
+          nominal: NOMINAL,
+          gain: 0.0,
+          coupon: 0.0,
+          age: 0,
+        });
+      }
+      bondsBought += count;
+      return available - count * NOMINAL;
+    }
+
+    function depositAt(month) {
+      schedule.forEach((item) => {
+        if (item.month !== month) return;
+        cash += item.amount;
+        totalDeposits += item.amount;
+        annualDeposits += item.amount;
+        flows.push([month, -item.amount]);
+        cash = buy(item.code, cash, month);
+      });
+    }
+
+    function redeemLots(target) {
+      while (cash < target && lots.length) {
+        let oldest = 0;
+        for (let i = 1; i < lots.length; i += 1) {
+          if (lots[i].age > lots[oldest].age) oldest = i;
+        }
+        const lot = lots[oldest];
+        const profile = PROFILES[lot.code];
+        let interest = lot.payout === "kapitalizacja" ? lot.gain : lot.coupon;
+        if (profile.earlyNoInterest) interest = 0.0;
+        const fee = Math.min(Number(profile.earlyFee) || 0, Math.max(0.0, interest));
+        const taxable = Math.max(0.0, interest - fee);
+        const tax = taxable * taxFactor;
+        cash += NOMINAL + interest - fee - tax;
+        taxPaid += tax;
+        annualTax += tax;
+        annualPrincipal += NOMINAL;
+        annualMaturedInterest += taxable - tax;
+        lots.splice(oldest, 1);
+      }
+    }
+
+    depositAt(0);
+
+    for (let month = 1; month <= months; month += 1) {
+      depositAt(month);
+
+      if (withdrawal > 0) {
+        if (cash < withdrawal) redeemLots(withdrawal);
+        const taken = Math.min(withdrawal, cash);
+        cash -= taken;
+        totalWithdrawn += taken;
+        annualWithdrawals += taken;
+        if (taken > 0) flows.push([month, taken]);
+        if (taken + 1e-9 < withdrawal && depletionMonth === 0) {
+          depletionMonth = month;
+        }
+      }
+
+      const survivors = [];
+      const maturedCodes = [];
+      for (const lot of lots) {
+        const yearIndex = Math.floor(lot.age / 12) + 1;
+        const annualRate = yearIndex <= 1 ? lot.rate1 : lot.laterRate;
+        const interest = lot.nominal * monthlyRate(annualRate);
+        annualInterest += interest;
+        lot.age += 1;
+
+        if (lot.payout === "kapitalizacja") {
+          lot.nominal += interest;
+          lot.gain += interest;
+        } else {
+          lot.coupon += interest;
+        }
+
+        const mature = lot.age >= lot.termMonths;
+        if (lot.payout === "wyplata" && (lot.age % 12 === 0 || mature)) {
+          if (lot.coupon > 0) {
+            const tax = lot.coupon * taxFactor;
+            cash += lot.coupon - tax;
+            taxPaid += tax;
+            annualTax += tax;
+            annualMaturedInterest += lot.coupon - tax;
+            lot.coupon = 0.0;
+          }
+        }
+
+        if (mature) {
+          if (lot.payout === "kapitalizacja") {
+            const tax = lot.gain * taxFactor;
+            cash += lot.nominal - tax;
+            taxPaid += tax;
+            annualTax += tax;
+            annualMaturedInterest += lot.nominal - tax - NOMINAL;
+          } else {
+            cash += NOMINAL;
+          }
+          annualPrincipal += NOMINAL;
+          maturedCodes.push(lot.code);
+          continue;
+        }
+        survivors.push(lot);
+      }
+      lots = survivors;
+
+      if (reinvest && cash >= NOMINAL) {
+        const buffer = withdrawal > 0 ? withdrawal * 3 : 0;
+        if (cash - buffer >= NOMINAL) {
+          const code = maturedCodes[0] || primaryCode;
+          const pool = cash - buffer;
+          cash = buffer + buy(code, pool, month);
+        }
+      }
+
+      if (month % 12 === 0) {
+        rows.push({
+          year: month / 12,
+          deposits: annualDeposits,
+          cumulativeDeposits: totalDeposits,
+          interest: annualInterest,
+          tax: annualTax,
+          net: netValue(lots, cash, taxFactor),
+          maturedPrincipal: annualPrincipal,
+          maturedInterest: annualMaturedInterest,
+          withdrawal: annualWithdrawals,
+          withdrawalCum: totalWithdrawn,
+        });
+        annualDeposits = 0.0;
+        annualInterest = 0.0;
+        annualTax = 0.0;
+        annualWithdrawals = 0.0;
+        annualPrincipal = 0.0;
+        annualMaturedInterest = 0.0;
+      }
+    }
+
+    const net = netValue(lots, cash, taxFactor);
+    flows.push([months, net]);
+    const monthlyIrr = xirrMonthly(flows);
+    const irr = monthlyIrr > -1 ? Math.pow(1.0 + monthlyIrr, 12) - 1.0 : -1.0;
+
+    return {
+      totalDeposits,
+      totalWithdrawn,
+      net,
+      netProfit: net + totalWithdrawn - totalDeposits,
+      bondsBought,
+      bondsHeld: lots.length,
+      cashLeft: cash,
+      taxPaid,
+      irr,
+      months,
+      years: horizonYears,
+      depletionMonth,
+      depleted: depletionMonth > 0,
+      rows,
+    };
+  }
+
+  /* Wartość w dzisiejszych złotówkach (dyskonto skumulowaną inflacją). */
+  function discount(value, years, inflationPercent) {
+    const rate = Number(inflationPercent) / 100.0;
+    return Number(value) / Math.pow(1.0 + rate, Math.max(0, Number(years)));
+  }
+
+  /* Wpłaty wyrażone w dzisiejszych złotówkach (każda zdyskontowana osobno). */
+  function realDeposits(plan, inflationPercent) {
+    const rate = monthlyRate(inflationPercent);
+    if (!plan) return 0.0;
+    if (plan.mode === "lump") return Math.max(0, Number(plan.amount) || 0);
+    let total = 0.0;
+    const months = Math.max(0, Math.trunc(plan.years || 0)) * 12;
+    const deposit = Math.max(0, Number(plan.deposit) || 0);
+    for (let month = 1; month <= months; month += 1) {
+      total += deposit / Math.pow(1.0 + rate, month);
+    }
+    return total;
+  }
+
   return {
     NOMINAL,
     BELKA,
@@ -473,5 +723,8 @@
     xirrMonthly,
     calculate,
     benchmarkSeries,
+    simulate,
+    discount,
+    realDeposits,
   };
 });

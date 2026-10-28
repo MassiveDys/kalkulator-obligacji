@@ -1,0 +1,25 @@
+{
+  "name": "Kalkulator obligacji skarbowych",
+  "short_name": "Obligacje",
+  "description": "Portfel i drabina obligacyjna, porównanie wariantów, tryb rentierski i wartości po inflacji.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#eef2f7",
+  "theme_color": "#1f4e79",
+  "lang": "pl",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-maskable.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ]
+}

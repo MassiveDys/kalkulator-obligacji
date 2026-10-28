@@ -4,14 +4,15 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#eef2f7">
-  <meta name="description" content="Kalkulator polskich obligacji skarbowych: EDO, COI, TOS, DOR, ROR, OTS, ROS, ROD. Dopłaty miesięczne lub wpłata jednorazowa, podatek Belki / IKE, porównanie z S&P 500 i WIG20.">
+  <meta name="description" content="Kalkulator polskich obligacji skarbowych: EDO, COI, TOS, DOR, ROR, OTS, ROS, ROD. Portfel i drabina obligacyjna, porównanie wariantów, tryb rentierski, podatek Belki / IKE, wartości po inflacji.">
   <meta property="og:type" content="website">
   <meta property="og:locale" content="pl_PL">
   <meta property="og:title" content="Kalkulator obligacji skarbowych">
-  <meta property="og:description" content="Policz zysk z obligacji skarbowych: dopłaty miesięczne lub jedna wpłata, podatek Belki / IKE, tabela rok po roku i porównanie z S&P 500 oraz WIG20.">
+  <meta property="og:description" content="Policz zysk z obligacji, zbuduj portfel, porównaj dwa warianty i sprawdź, na ile lat wystarczy kapitał przy stałej wypłacie.">
   <meta name="twitter:card" content="summary">
   <title>Kalkulator obligacji skarbowych</title>
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%231f4e79'/%3E%3Cpath d='M8 22V14M14 22V10M20 22V16M26 22V8' stroke='%23a6e3a1' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="manifest" href="manifest.webmanifest">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -19,16 +20,27 @@
     <header class="masthead">
       <div class="masthead-text">
         <h1>Kalkulator obligacji skarbowych</h1>
-        <p>Dopłaty miesięczne lub wpłata jednorazowa &bull; podatek Belki / IKE &bull; porównanie z S&amp;P 500 i WIG20</p>
+        <p>Portfel i drabina &bull; porównanie A/B &bull; tryb rentierski &bull; podatek Belki / IKE &bull; wartości po inflacji</p>
+      </div>
+      <div class="masthead-actions">
+        <button type="button" class="ghost" id="share-button">
+          <svg viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M12.5 7.5 17 3m0 0h-4.5M17 3v4.5M7.5 12.5 3 17m0 0h4.5M3 17v-4.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span>Kopiuj link</span>
+        </button>
+        <button type="button" class="ghost ghost-subtle" id="reset-button">Reset</button>
       </div>
     </header>
 
     <div class="tabs" role="tablist" aria-label="Widok">
       <button type="button" class="tab is-active" id="tab-calc" role="tab" aria-selected="true" aria-controls="panel-calc" data-tab="calc">Obliczenia</button>
+      <button type="button" class="tab" id="tab-compare" role="tab" aria-selected="false" aria-controls="panel-compare" data-tab="compare" tabindex="-1">Porównanie</button>
+      <button type="button" class="tab" id="tab-portfolio" role="tab" aria-selected="false" aria-controls="panel-portfolio" data-tab="portfolio" tabindex="-1">Portfel</button>
+      <button type="button" class="tab" id="tab-rentier" role="tab" aria-selected="false" aria-controls="panel-rentier" data-tab="rentier" tabindex="-1">Rentier</button>
       <button type="button" class="tab" id="tab-charts" role="tab" aria-selected="false" aria-controls="panel-charts" data-tab="charts" tabindex="-1">Wykresy</button>
     </div>
 
     <main>
+      <!-- ------------------------------------------------------- obliczenia -->
       <section class="panel" id="panel-calc" role="tabpanel" aria-labelledby="tab-calc">
         <form class="card controls" id="form" novalidate>
           <div class="plan-bar">
@@ -103,6 +115,11 @@
               <span>Wcześniejszy wykup (przed terminem)</span>
             </label>
 
+            <label class="check">
+              <input type="checkbox" id="real">
+              <span>Wartości realne (po inflacji)</span>
+            </label>
+
             <div class="segmented" id="payout-switch" role="group" aria-label="Tryb po zapadnięciu">
               <button type="button" data-mode="reinvest" aria-pressed="false">Reinwestuj wykupy</button>
               <button type="button" data-mode="payout" aria-pressed="true" class="is-active">Wypłacaj na konto</button>
@@ -143,7 +160,16 @@
               <div class="tile-value tile-green" id="tile-irr">&mdash;</div>
               <div class="tile-label">Średnia roczna stopa zwrotu netto</div>
             </div>
+            <div class="tile tile-real" hidden>
+              <div class="tile-value tile-green" id="tile-real-net">&mdash;</div>
+              <div class="tile-label">Wartość netto w dzisiejszych zł</div>
+            </div>
+            <div class="tile tile-real" hidden>
+              <div class="tile-value tile-green" id="tile-real-profit">&mdash;</div>
+              <div class="tile-label">Realny zysk po inflacji</div>
+            </div>
           </div>
+          <p class="real-note" id="real-note" hidden></p>
           <div class="early-summary" id="early-summary" hidden>
             <span class="early-summary-label">Opłata za wcześniejszy wykup</span>
             <strong class="early-summary-value" id="early-fee-value">0,00 zł</strong>
@@ -184,11 +210,363 @@
           Opłata za wcześniejszy wykup (emisje od 1.09.2024): EDO/ROD 3 zł, COI/ROS 2 zł, TOS 1 zł,
           DOR 0,70 zł, ROR 0,50 zł za sztukę; OTS bez opłaty, ale bez odsetek. Opłata jest
           potrącana z odsetek i nie przekracza ich wysokości — kapitał 100 zł/szt. jest chroniony.
-          Benchmarki to stałe średnie stopy (S&amp;P 500 ~10,2%, WIG20 ~7,5% rocznie) — bez kosztów
-          i inflacji. Wyniki są szacunkowe.
+          Wartości realne to wartość nominalna podzielona przez skumulowaną inflację (wpłaty
+          dyskontowane osobno). Benchmarki to stałe średnie stopy (S&amp;P 500 ~10,2%, WIG20 ~7,5%
+          rocznie) — bez kosztów i inflacji. Wyniki są szacunkowe.
         </p>
       </section>
 
+      <!-- ------------------------------------------------------- porównanie -->
+      <section class="panel" id="panel-compare" role="tabpanel" aria-labelledby="tab-compare" hidden>
+        <div class="card controls">
+          <div class="card-head">
+            <div>
+              <h2>Porównanie dwóch wariantów</h2>
+              <p class="subtitle">Ustaw A i B, zobacz różnicę w złotych. Np. EDO na IKE vs COI z Belką, albo wcześniejszy wykup vs trzymanie do końca.</p>
+            </div>
+          </div>
+
+          <div class="compare-grid">
+            <div class="cmp-side cmp-side-a" id="cmp-a"></div>
+            <div class="cmp-side cmp-side-b" id="cmp-b"></div>
+          </div>
+
+          <div class="actions">
+            <div class="grid grid-inline">
+              <div class="field">
+                <label for="cmp-inflation">Inflacja dla obu (%)</label>
+                <input id="cmp-inflation" type="text" inputmode="decimal" value="3,00">
+              </div>
+              <div class="field">
+                <label for="cmp-nbp">Stopa NBP dla obu (%)</label>
+                <input id="cmp-nbp" type="text" inputmode="decimal" value="5,75">
+              </div>
+            </div>
+            <button type="button" class="ghost" id="cmp-copy">A → B</button>
+            <button type="button" class="ghost" id="cmp-swap">Zamień A ↔ B</button>
+            <button type="button" class="primary" id="cmp-calc">Porównaj</button>
+          </div>
+        </div>
+
+        <div class="alert" id="cmp-alert" role="alert" hidden></div>
+
+        <section class="card summary" aria-label="Wyniki porównania">
+          <div class="tiles">
+            <div class="tile">
+              <div class="tile-value" id="cmp-net-a">&mdash;</div>
+              <div class="tile-label">Wartość netto A</div>
+            </div>
+            <div class="tile">
+              <div class="tile-value" id="cmp-net-b">&mdash;</div>
+              <div class="tile-label">Wartość netto B</div>
+            </div>
+            <div class="tile">
+              <div class="tile-value tile-green" id="cmp-net-diff">&mdash;</div>
+              <div class="tile-label">Różnica B − A (netto)</div>
+            </div>
+            <div class="tile">
+              <div class="tile-value" id="cmp-profit-a">&mdash;</div>
+              <div class="tile-label">Zysk netto A</div>
+            </div>
+            <div class="tile">
+              <div class="tile-value" id="cmp-profit-b">&mdash;</div>
+              <div class="tile-label">Zysk netto B</div>
+            </div>
+            <div class="tile">
+              <div class="tile-value" id="cmp-irr-a">&mdash;</div>
+              <div class="tile-label">Stopa roczna A</div>
+            </div>
+            <div class="tile">
+              <div class="tile-value" id="cmp-irr-b">&mdash;</div>
+              <div class="tile-label">Stopa roczna B</div>
+            </div>
+            <div class="tile">
+              <div class="tile-value tile-green" id="cmp-profit-diff">&mdash;</div>
+              <div class="tile-label">Różnica zysku B − A</div>
+            </div>
+          </div>
+        </section>
+
+        <section class="card table-card" aria-labelledby="cmp-table-title">
+          <div class="card-head">
+            <h2 id="cmp-table-title">Zestawienie wyników</h2>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th scope="col" class="col-label">Pozycja</th>
+                  <th scope="col">Wariant A</th>
+                  <th scope="col">Wariant B</th>
+                  <th scope="col">B − A</th>
+                </tr>
+              </thead>
+              <tbody id="cmp-rows"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="card charts-card">
+          <div class="card-head">
+            <div>
+              <h2>Wartość netto A i B w czasie</h2>
+              <p class="subtitle" id="cmp-subtitle"></p>
+            </div>
+          </div>
+          <div class="legend">
+            <span class="legend-item"><i class="swatch swatch-a"></i>Wariant A</span>
+            <span class="legend-item"><i class="swatch swatch-b"></i>Wariant B</span>
+          </div>
+          <div class="canvas-wrap">
+            <canvas id="chart-compare" height="280" aria-label="Wykres liniowy: wartość netto wariantu A i B w kolejnych latach"></canvas>
+          </div>
+        </section>
+      </section>
+
+      <!-- ----------------------------------------------------------- portfel -->
+      <section class="panel" id="panel-portfolio" role="tabpanel" aria-labelledby="tab-portfolio" hidden>
+        <div class="card controls">
+          <div class="card-head">
+            <div>
+              <h2>Portfel i drabina obligacyjna</h2>
+              <p class="subtitle">Połącz kilka serii z różnymi datami zakupu. Wykupy są reinwestowane w tę samą serię, a kapitał wraca stopniowo.</p>
+            </div>
+          </div>
+
+          <div class="grid grid-shared">
+            <div class="field">
+              <label for="pf-horizon">Horyzont portfela (lata)</label>
+              <input id="pf-horizon" type="text" inputmode="numeric" value="10">
+            </div>
+            <div class="field">
+              <label for="pf-inflation">Inflacja (%)</label>
+              <input id="pf-inflation" type="text" inputmode="decimal" value="3,00">
+            </div>
+            <div class="field">
+              <label for="pf-nbp">Stopa NBP (%)</label>
+              <input id="pf-nbp" type="text" inputmode="decimal" value="5,75">
+            </div>
+            <div class="field field-check">
+              <label class="check">
+                <input type="checkbox" id="pf-ike">
+                <span>IKE (0% podatku)</span>
+              </label>
+            </div>
+          </div>
+
+          <div class="pos-head">
+            <span>Obligacja</span>
+            <span>Kwota (zł)</span>
+            <span>Start (mies.)</span>
+            <span></span>
+          </div>
+          <div class="pos-list" id="pf-positions"></div>
+          <p class="field-note">Start 0 = dziś; np. 12 = zakup za rok. Kwoty zaokrąglane do pełnych obligacji po 100 zł.</p>
+
+          <div class="actions">
+            <button type="button" class="ghost" id="pf-add">+ Dodaj pozycję</button>
+            <button type="button" class="ghost" id="pf-preset">Przykład: drabina 4-letnia</button>
+            <button type="button" class="ghost ghost-subtle" id="pf-preset-edo">Czysty EDO</button>
+            <button type="button" class="primary" id="pf-calc">Oblicz portfel</button>
+          </div>
+        </div>
+
+        <div class="alert" id="pf-alert" role="alert" hidden></div>
+
+        <section class="card summary" aria-label="Wyniki portfela">
+          <div class="tiles">
+            <div class="tile">
+              <div class="tile-value" id="pf-deposits">&mdash;</div>
+              <div class="tile-label">Suma wpłat</div>
+            </div>
+            <div class="tile">
+              <div class="tile-value tile-green" id="pf-net">&mdash;</div>
+              <div class="tile-label">Wartość netto na koniec</div>
+            </div>
+            <div class="tile">
+              <div class="tile-value tile-green" id="pf-profit">&mdash;</div>
+              <div class="tile-label">Zysk netto</div>
+            </div>
+            <div class="tile">
+              <div class="tile-value tile-green" id="pf-irr">&mdash;</div>
+              <div class="tile-label">Roczna stopa zwrotu (IRR)</div>
+            </div>
+            <div class="tile">
+              <div class="tile-value" id="pf-bonds">&mdash;</div>
+              <div class="tile-label">Obligacje na koniec</div>
+            </div>
+          </div>
+          <p class="real-note" id="pf-subtitle"></p>
+        </section>
+
+        <section class="card table-card" aria-labelledby="pf-table-title">
+          <div class="card-head">
+            <h2 id="pf-table-title">Portfel rok po roku</h2>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th scope="col" class="col-year">Rok</th>
+                  <th scope="col">Wpłaty w roku</th>
+                  <th scope="col">Skumulowane wpłaty</th>
+                  <th scope="col">Kapitał wykupiony</th>
+                  <th scope="col">Odsetki netto z wykupów</th>
+                  <th scope="col">Podatek</th>
+                  <th scope="col">Wartość netto</th>
+                </tr>
+              </thead>
+              <tbody id="pf-rows"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="card charts-card">
+          <div class="card-head">
+            <div>
+              <h2>Wykupy i wartość portfela</h2>
+            </div>
+          </div>
+          <figure class="chart">
+            <figcaption>Ile kapitału i odsetek wraca w każdym roku</figcaption>
+            <div class="legend">
+              <span class="legend-item"><i class="swatch swatch-principal"></i>Kapitał (100 zł/szt.)</span>
+              <span class="legend-item"><i class="swatch swatch-interest"></i>Odsetki netto</span>
+            </div>
+            <div class="canvas-wrap">
+              <canvas id="chart-pf-maturity" height="260" aria-label="Wykres słupkowy: wykupy kapitału i odsetek w każdym roku"></canvas>
+            </div>
+          </figure>
+          <figure class="chart">
+            <figcaption>Wartość netto portfela a wpłacony kapitał</figcaption>
+            <div class="legend">
+              <span class="legend-item"><i class="swatch swatch-net"></i>Wartość netto</span>
+              <span class="legend-item"><i class="swatch swatch-capital"></i>Wpłacony kapitał</span>
+              <span class="legend-item"><i class="swatch swatch-profit"></i>Zysk netto</span>
+            </div>
+            <div class="canvas-wrap">
+              <canvas id="chart-pf-wealth" height="260" aria-label="Wykres liniowy: wartość netto portfela i wpłacony kapitał"></canvas>
+            </div>
+          </figure>
+        </section>
+      </section>
+
+      <!-- ----------------------------------------------------------- rentier -->
+      <section class="panel" id="panel-rentier" role="tabpanel" aria-labelledby="tab-rentier" hidden>
+        <div class="card controls">
+          <div class="card-head">
+            <div>
+              <h2>Tryb rentierski — życie z odsetek</h2>
+              <p class="subtitle">Ile lat wystarczy kapitał przy stałej wypłacie miesięcznej? Model obejmuje podatek, reinwestycję i wcześniejszy wykup, gdy brakuje gotówki.</p>
+            </div>
+          </div>
+
+          <div class="grid">
+            <div class="field">
+              <label for="rn-capital">Kapitał początkowy (zł)</label>
+              <input id="rn-capital" type="text" inputmode="decimal" value="300000">
+            </div>
+            <div class="field">
+              <label for="rn-code">Rodzaj obligacji</label>
+              <select id="rn-code"></select>
+            </div>
+            <div class="field">
+              <label for="rn-withdrawal">Wypłata miesięczna (zł)</label>
+              <input id="rn-withdrawal" type="text" inputmode="decimal" value="2000">
+            </div>
+            <div class="field">
+              <label for="rn-horizon">Horyzont symulacji (lata)</label>
+              <input id="rn-horizon" type="text" inputmode="numeric" value="30">
+            </div>
+            <div class="field">
+              <label for="rn-inflation">Inflacja (%)</label>
+              <input id="rn-inflation" type="text" inputmode="decimal" value="3,00">
+            </div>
+            <div class="field">
+              <label for="rn-nbp">Stopa NBP (%)</label>
+              <input id="rn-nbp" type="text" inputmode="decimal" value="5,75">
+            </div>
+          </div>
+
+          <div class="actions">
+            <label class="check">
+              <input type="checkbox" id="rn-ike">
+              <span>IKE (0% podatku)</span>
+            </label>
+            <button type="button" class="primary" id="rn-calc">Sprawdź</button>
+          </div>
+        </div>
+
+        <div class="alert" id="rn-alert" role="alert" hidden></div>
+
+        <section class="card summary" aria-label="Wyniki trybu rentierskiego">
+          <div class="tiles">
+            <div class="tile">
+              <div class="tile-value" id="rn-years">&mdash;</div>
+              <div class="tile-label">Kapitał wystarczy na</div>
+            </div>
+            <div class="tile">
+              <div class="tile-value tile-green" id="rn-withdrawn">&mdash;</div>
+              <div class="tile-label">Łącznie wypłacono</div>
+            </div>
+            <div class="tile">
+              <div class="tile-value" id="rn-left">&mdash;</div>
+              <div class="tile-label">Kapitał na koniec</div>
+            </div>
+            <div class="tile">
+              <div class="tile-value" id="rn-real">&mdash;</div>
+              <div class="tile-label">Wypłaty w dzisiejszych zł</div>
+            </div>
+            <div class="tile">
+              <div class="tile-value" id="rn-real-monthly">&mdash;</div>
+              <div class="tile-label">Średnia realna wypłata</div>
+            </div>
+            <div class="tile">
+              <div class="tile-value" id="rn-cost">&mdash;</div>
+              <div class="tile-label">Zapłacony podatek</div>
+            </div>
+          </div>
+          <p class="real-note" id="rn-subtitle"></p>
+        </section>
+
+        <section class="card table-card" aria-labelledby="rn-table-title">
+          <div class="card-head">
+            <h2 id="rn-table-title">Wypłaty rok po roku</h2>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th scope="col" class="col-year">Rok</th>
+                  <th scope="col">Wypłaty w roku</th>
+                  <th scope="col">Łącznie wypłacone</th>
+                  <th scope="col">Wartość portfela</th>
+                  <th scope="col">Portfel w dzisiejszych zł</th>
+                  <th scope="col">Podatek</th>
+                </tr>
+              </thead>
+              <tbody id="rn-rows"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="card charts-card">
+          <div class="card-head">
+            <div>
+              <h2>Kapitał i wypłaty w czasie</h2>
+            </div>
+          </div>
+          <div class="legend">
+            <span class="legend-item"><i class="swatch swatch-net"></i>Wartość portfela</span>
+            <span class="legend-item"><i class="swatch swatch-b"></i>Łącznie wypłacone</span>
+          </div>
+          <div class="canvas-wrap">
+            <canvas id="chart-rentier" height="280" aria-label="Wykres liniowy: wartość portfela i suma wypłat w kolejnych latach"></canvas>
+          </div>
+        </section>
+      </section>
+
+      <!-- ------------------------------------------------------------ wykresy -->
       <section class="panel" id="panel-charts" role="tabpanel" aria-labelledby="tab-charts" hidden>
         <div class="card charts-card">
           <div class="card-head">
@@ -248,12 +626,18 @@
 
     <footer class="page-foot">
       Kalkulator edukacyjny. Nie jest ofertą inwestycyjną ani rekomendacją. Obliczenia wykonują się
-      w przeglądarce — dane nie są wysyłane na serwer.
+      w przeglądarce — dane nie są wysyłane na serwer. Link ze scenariuszem zawiera tylko parametry
+      kalkulatora.
     </footer>
   </div>
 
+  <script src="ui.js"></script>
   <script src="bonds.js"></script>
   <script src="charts.js"></script>
   <script src="app.js"></script>
+  <script src="compare.js"></script>
+  <script src="portfolio.js"></script>
+  <script src="rentier.js"></script>
+  <script src="boot.js"></script>
 </body>
 </html>
