@@ -33,6 +33,10 @@ python -m http.server 8766
 - Wersja web: tryb **wpłaty jednorazowej** (np. 10 000 zł na 10 lat) obok dopłat miesięcznych.
 - Wersja web: na wykresie wartości porównanie z **S&P 500 (~10,2% rocznie)** i **WIG20 (~7,5% rocznie)**
   przy identycznym planie wpłat; przełączniki widoczności i opcjonalny podatek Belki 19%.
+- Wersja web: **wcześniejszy wykup** — checkbox, wypłata na koniec horyzontu przed zapadalnością;
+  opłata wg typu (EDO/ROD 3 zł, COI/ROS 2 zł, TOS 1 zł, DOR 0,70 zł, ROR 0,50 zł, OTS 0 zł) jest
+  potrącana z odsetek, maks. do ich wysokości; podatek Belki liczony od odsetek po opłacie.
+  Stawki potwierdzone w [słowniczku obligacjeskarbowe.pl](https://www.obligacjeskarbowe.pl/slowniczek/).
 
 ## Uruchomienie
 
@@ -74,6 +78,8 @@ builds\kalkulator-obligacji.exe --self-test builds\smoke-test.txt
 - Wartości scenariuszy marży i inflacji są orientacyjne — to punkty wyjścia, nie prognoza.
 - Benchmarki (S&P 500 ~10,2%, WIG20 ~7,5% rocznie): stała stopa, miesięczne przeliczenie,
   zyski reinwestowane, opcjonalny podatek Belki 19%; bez kosztów, inflacji i zmienności rynku.
+- Wcześniejszy wykup: opłata per obligacja potrącana z odsetek, nie więcej niż odsetki; kapitał
+  100 zł/szt. jest zwracany. OTS: bez opłaty, ale odsetki za niezakończony okres przepadają.
 
 ## Struktura
 

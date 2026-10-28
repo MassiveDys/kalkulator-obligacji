@@ -19,41 +19,49 @@
     EDO: {
       code: "EDO", name: "EDO 10-letnie", termYears: 10, kind: "inflacja",
       payout: "kapitalizacja", defaultRate1: 5.35, defaultMargin: 2.00,
+      earlyFee: 3.00, earlyNoInterest: false,
       description: "Indeksowane inflacją, roczna kapitalizacja odsetek.",
     },
     COI: {
       code: "COI", name: "COI 4-letnie", termYears: 4, kind: "inflacja",
       payout: "wyplata", defaultRate1: 5.15, defaultMargin: 1.75,
+      earlyFee: 2.00, earlyNoInterest: false,
       description: "Indeksowane inflacją, roczne wypłaty odsetek.",
     },
     TOS: {
       code: "TOS", name: "TOS 3-letnie", termYears: 3, kind: "stale",
       payout: "kapitalizacja", defaultRate1: 5.75, defaultMargin: 0.00,
+      earlyFee: 1.00, earlyNoInterest: false,
       description: "Stałe oprocentowanie, roczna kapitalizacja.",
     },
     DOR: {
       code: "DOR", name: "DOR 2-letnie", termYears: 2, kind: "nbp",
       payout: "wyplata", defaultRate1: 5.75, defaultMargin: 0.25,
+      earlyFee: 0.70, earlyNoInterest: false,
       description: "Stopa NBP + marża, roczne wypłaty odsetek.",
     },
     ROR: {
       code: "ROR", name: "ROR 1-roczne", termYears: 1, kind: "nbp",
       payout: "wyplata", defaultRate1: 5.75, defaultMargin: 0.00,
+      earlyFee: 0.50, earlyNoInterest: false,
       description: "Stopa NBP, odsetki wypłacane przy wykupie.",
     },
     OTS: {
       code: "OTS", name: "OTS 3-miesięczne", termYears: 0.25, kind: "stale",
       payout: "kapitalizacja", defaultRate1: 4.50, defaultMargin: 0.00,
+      earlyFee: 0.00, earlyNoInterest: true,
       description: "Stałe oprocentowanie, wykup po 3 miesiącach.",
     },
     ROS: {
       code: "ROS", name: "ROS 6-letnie (rodzinne)", termYears: 6, kind: "inflacja",
       payout: "kapitalizacja", defaultRate1: 5.60, defaultMargin: 2.00,
+      earlyFee: 2.00, earlyNoInterest: false,
       description: "Obligacje rodzinne, indeksowane inflacją.",
     },
     ROD: {
       code: "ROD", name: "ROD 12-letnie (rodzinne)", termYears: 12, kind: "inflacja",
       payout: "kapitalizacja", defaultRate1: 5.75, defaultMargin: 2.50,
+      earlyFee: 3.00, earlyNoInterest: false,
       description: "Obligacje rodzinne, indeksowane inflacją.",
     },
   };
@@ -211,6 +219,7 @@
     const rows = [];
     const flows = [];
     const taxFactor = ike ? 0.0 : BELKA;
+    const earlyAtEnd = Boolean(options && options.earlyRedemption);
 
     function buy(month, available) {
       const count = Math.floor(available / NOMINAL);
@@ -284,7 +293,8 @@
         }
 
         const mature = lot.age >= lot.termMonths;
-        if (lot.payout === "wyplata" && (lot.age % 12 === 0 || mature)) {
+        const skipCoupon = earlyAtEnd && month === months && !mature;
+        if (lot.payout === "wyplata" && (lot.age % 12 === 0 || mature) && !skipCoupon) {
           settleCoupon(lot);
         }
 
@@ -329,6 +339,8 @@
           maturedPrincipal: annualPrincipal,
           maturedInterest: annualMaturedInterest,
           payoutCum: paidOut,
+          early: false,
+          earlyFee: 0,
         });
         annualDeposits = 0.0;
         annualInterest = 0.0;
@@ -338,8 +350,54 @@
       }
     }
 
-    const gross = grossValue(lots, cash, taxPaid) + paidOut;
-    const net = netValue(lots, cash, taxFactor) + paidOut;
+    let gross;
+    let net;
+    let earlyBonds = 0;
+    let earlyFee = 0;
+    let earlyFeeNominal = 0;
+    let earlyTax = 0;
+    let earlyNetInterest = 0;
+    const earlyApplied = Boolean(options && options.earlyRedemption && lots.length > 0);
+
+    if (earlyApplied) {
+      const feePerBond = Number(profile.earlyFee) || 0;
+      earlyBonds = lots.length;
+      earlyFeeNominal = earlyBonds * feePerBond;
+      let heldGross = 0.0;
+      let heldNet = 0.0;
+
+      for (const lot of lots) {
+        let interest = lot.payout === "kapitalizacja" ? lot.gain : lot.coupon;
+        // OTS: przy przedterminowym wykupie odsetki nie są naliczane.
+        if (profile.earlyNoInterest) interest = 0.0;
+        const fee = Math.min(feePerBond, Math.max(0.0, interest));
+        const taxable = Math.max(0.0, interest - fee);
+        const tax = taxable * taxFactor;
+        earlyFee += fee;
+        earlyTax += tax;
+        earlyNetInterest += taxable - tax;
+        heldGross += NOMINAL + interest - fee;
+        heldNet += NOMINAL + interest - fee - tax;
+      }
+
+      gross = heldGross + cash + taxPaid + paidOut;
+      net = heldNet + cash + paidOut;
+
+      const last = rows[rows.length - 1];
+      if (last) {
+        last.early = true;
+        last.earlyFee = earlyFee;
+        last.gross = gross;
+        last.net = net;
+        last.tax += earlyTax;
+        last.maturedPrincipal += earlyBonds * NOMINAL;
+        last.maturedInterest += earlyNetInterest;
+      }
+    } else {
+      gross = grossValue(lots, cash, taxPaid) + paidOut;
+      net = netValue(lots, cash, taxFactor) + paidOut;
+    }
+
     flows.push([months, net]);
     const monthlyIrr = xirrMonthly(flows);
     const irr = monthlyIrr > -1 ? Math.pow(1.0 + monthlyIrr, 12) - 1.0 : -1.0;
@@ -361,6 +419,13 @@
       reinvest,
       paymentMode: mode,
       lumpAmount,
+      earlyApplied,
+      earlyBonds,
+      earlyFee,
+      earlyFeeNominal,
+      earlyTax,
+      earlyRate: Number(profile.earlyFee) || 0,
+      earlyNoInterest: Boolean(profile.earlyNoInterest),
       rows,
     };
   }

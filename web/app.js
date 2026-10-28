@@ -47,6 +47,11 @@
     inflationNote: document.getElementById("inflation-note"),
     nbp: document.getElementById("nbp"),
     ike: document.getElementById("ike"),
+    early: document.getElementById("early"),
+    earlyInfo: document.getElementById("early-info"),
+    earlySummary: document.getElementById("early-summary"),
+    earlyFeeValue: document.getElementById("early-fee-value"),
+    earlyFeeDetail: document.getElementById("early-fee-detail"),
     calcButton: document.getElementById("calc-button"),
     alert: document.getElementById("alert"),
     rows: document.getElementById("rows"),
@@ -260,6 +265,8 @@
       (profile.payout === "kapitalizacja" ? "kapitalizacja roczna" : "wypłata roczna") +
       ".";
 
+    updateEarlyInfo();
+
     if (!options.silent) {
       el.profile.value = code;
     }
@@ -333,6 +340,7 @@
       inflation,
       nbp,
       ike: el.ike.checked,
+      early: el.early.checked,
       reinvest: state.mode === "reinvest",
     };
   }
@@ -343,12 +351,14 @@
     result.rows.forEach((row, index) => {
       const cls = index % 2 === 1 ? "odd" : "even";
       parts.push(
-        '<tr class="' + cls + '">' +
-          '<td class="col-year">' + row.year + "</td>" +
+        '<tr class="' + cls + (row.early ? " is-early" : "") + '">' +
+          '<td class="col-year">' + row.year +
+            (row.early ? ' <span class="badge">wykup</span>' : "") + "</td>" +
           '<td class="num">' + fmtNumber(row.deposits, 0) + "</td>" +
           '<td class="num">' + fmtNumber(row.cumulativeDeposits, 0) + "</td>" +
           '<td class="num">' + fmtNumber(row.interest, 2) + "</td>" +
           '<td class="num">' + fmtNumber(row.tax, 2) + "</td>" +
+          '<td class="num">' + fmtNumber(row.earlyFee, 2) + "</td>" +
           '<td class="num">' + fmtNumber(row.gross, 2) + "</td>" +
           '<td class="num">' + fmtNumber(row.net, 2) + "</td>" +
         "</tr>"
@@ -396,6 +406,35 @@
     renderTiles(result);
     renderTable(result);
 
+    if (inputs.early) {
+      el.earlySummary.hidden = false;
+      el.earlyFeeValue.textContent = fmtMoney(result.earlyFee);
+      if (result.earlyApplied) {
+        if (result.earlyNoInterest) {
+          el.earlyFeeDetail.textContent =
+            result.earlyBonds + " szt. OTS — bez opłaty, odsetki za niezakończony okres nie są naliczane";
+        } else {
+          let detail =
+            result.earlyBonds +
+            " szt. × " +
+            fmtMoney(result.earlyRate) +
+            " = " +
+            fmtMoney(result.earlyFeeNominal);
+          if (result.earlyFeeNominal - result.earlyFee > 0.005) {
+            detail +=
+              "; opłata ograniczona do odsetek — potrącono " + fmtMoney(result.earlyFee);
+          } else {
+            detail += "; potrącona z odsetek";
+          }
+          el.earlyFeeDetail.textContent = detail;
+        }
+      } else {
+        el.earlyFeeDetail.textContent = "wszystkie obligacje zapadły w terminie — bez opłaty";
+      }
+    } else {
+      el.earlySummary.hidden = true;
+    }
+
     const modeText = result.reinvest
       ? "wykupy reinwestowane"
       : "wykupy wypłacane na konto";
@@ -403,12 +442,16 @@
       inputs.plan === "lump"
         ? "wpłata jednorazowa " + fmtMoney(inputs.amount, 0)
         : "dopłaty " + fmtMoney(inputs.deposit, 0) + "/mies. przez " + inputs.years + " lat";
+    const earlyText = result.earlyApplied
+      ? "; wcześniejszy wykup po " + result.years + " latach, opłata " + fmtMoney(result.earlyFee)
+      : "";
     el.chartsSubtitle.textContent =
       result.years +
       " lat, " +
       planText +
       ", " +
       modeText +
+      earlyText +
       "; słupki to transze zapadające w danym roku, druga linia pokazuje wartość netto portfela.";
 
     if (inputs.plan === "lump") {
@@ -461,7 +504,7 @@
         inputs.nbp,
         inputs.ike,
         inputs.reinvest,
-        { mode: inputs.plan, amount: inputs.amount }
+        { mode: inputs.plan, amount: inputs.amount, earlyRedemption: inputs.early }
       );
     } catch (err) {
       if (explicit) showAlert("Błąd obliczeń: " + err.message);
@@ -476,6 +519,28 @@
   function scheduleSilentCalculate() {
     window.clearTimeout(state.silentTimer);
     state.silentTimer = window.setTimeout(() => calculateAndRender(false), 350);
+  }
+
+  function updateEarlyInfo() {
+    const profile = PROFILES[currentCode()];
+    if (!profile) return;
+    let text;
+    if (profile.earlyNoInterest) {
+      text =
+        "OTS: brak opłaty za przedterminowy wykup, ale odsetki za niezakończony okres nie są naliczane.";
+    } else {
+      text =
+        "Opłata " +
+        profile.code +
+        ": " +
+        fmtMoney(profile.earlyFee) +
+        "/szt. (emisje od 1.09.2024). Potrącana z odsetek, maks. do ich wysokości; kapitał 100 zł/szt. jest chroniony.";
+    }
+    el.earlyInfo.textContent =
+      (el.early.checked
+        ? "Wcześniejszy wykup włączony (na koniec horyzontu). "
+        : "Wcześniejszy wykup wyłączony. ") + text;
+    el.earlyInfo.classList.toggle("is-on", el.early.checked);
   }
 
   /* --------------------------------------------------------------- CSV */
@@ -502,6 +567,7 @@
         "Skumulowane wpłaty",
         "Odsetki",
         "Podatek",
+        "Opłata wykupu",
         "Wartość brutto",
         "Wartość netto",
       ].join(";")
@@ -514,6 +580,7 @@
           row.cumulativeDeposits.toFixed(2),
           row.interest.toFixed(2),
           row.tax.toFixed(2),
+          row.earlyFee.toFixed(2),
           row.gross.toFixed(2),
           row.net.toFixed(2),
         ].join(";")
@@ -524,6 +591,7 @@
     lines.push(["Wartość brutto", result.gross.toFixed(2)].join(";"));
     lines.push(["Wartość netto", result.net.toFixed(2)].join(";"));
     lines.push(["Zysk netto", result.netProfit.toFixed(2)].join(";"));
+    lines.push(["Opłata za wcześniejszy wykup", result.earlyFee.toFixed(2)].join(";"));
     lines.push(["Stopa netto (rocznie)", (result.irr * 100).toFixed(2) + "%"].join(";"));
 
     const blob = new Blob(["\uFEFF" + lines.join("\r\n")], {
@@ -627,6 +695,11 @@
 
     el.ike.addEventListener("change", () => calculateAndRender(true));
 
+    el.early.addEventListener("change", () => {
+      updateEarlyInfo();
+      calculateAndRender(true);
+    });
+
     el.planButtons.forEach((button) => {
       button.addEventListener("click", () => {
         setPlan(button.dataset.plan);
@@ -667,6 +740,7 @@
   setPlan("monthly");
   applyProfile("EDO", { silent: true });
   el.profile.value = "EDO";
+  updateEarlyInfo();
   wireEvents();
   calculateAndRender(true);
 })();

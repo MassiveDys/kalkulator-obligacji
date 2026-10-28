@@ -1,5 +1,13 @@
 # CHANGELOG — kalkulator-obligacji
 
+## [1.5.0] — 2026-10-28
+- Dodano opcję „Wcześniejszy wykup (przed terminem)” — wypłata na koniec horyzontu przed zapadalnością obligacji.
+- Dodano opłaty za przedterminowy wykup wg listów emisyjnych (emisje od 1.09.2024): EDO/ROD 3 zł, COI/ROS 2 zł, TOS 1 zł, DOR 0,70 zł, ROR 0,50 zł, OTS 0 zł (bez odsetek).
+- Opłata jest potrącana z odsetek, nie przekracza ich wysokości; kapitał 100 zł/szt. pozostaje chroniony; podatek Belki liczony od odsetek po opłacie.
+- Dodano wiersz podsumowania z kwotą opłaty, kolumnę „Opłata wykupu” i znacznik „wykup” w tabeli oraz pozycję w eksporcie CSV.
+- Wykresy pokazują zakończenie inwestycji w roku wcześniejszego wykupu.
+- Zaktualizowano dokumentację i opublikowano na GitHub Pages.
+
 ## [1.4.0] — 2026-10-28
 - Dodano tryb „Wpłata jednorazowa”: kwota początkowa (np. 10 000 zł) i horyzont, zakup obligacji w miesiącu 0; pola dopłat miesięcznych ukrywane, lata dopłat nieaktywne.
 - Dodano benchmarki na wykresie wartości: S&P 500 (~10,2% rocznie) i WIG20 (~7,5% rocznie) przy identycznym planie wpłat.

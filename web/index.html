@@ -63,7 +63,7 @@
             </div>
 
             <div class="field">
-              <label for="horizon">Horyzont / likwidacja (lata)</label>
+              <label for="horizon">Horyzont / wypłata (lata)</label>
               <input id="horizon" name="horizon" type="text" inputmode="numeric" autocomplete="off" value="20">
             </div>
 
@@ -98,6 +98,11 @@
               <span>Konto IKE (bez podatku Belki)</span>
             </label>
 
+            <label class="check">
+              <input type="checkbox" id="early">
+              <span>Wcześniejszy wykup (przed terminem)</span>
+            </label>
+
             <div class="segmented" id="payout-switch" role="group" aria-label="Tryb po zapadnięciu">
               <button type="button" data-mode="reinvest" aria-pressed="false">Reinwestuj wykupy</button>
               <button type="button" data-mode="payout" aria-pressed="true" class="is-active">Wypłacaj na konto</button>
@@ -107,6 +112,7 @@
           </div>
 
           <p class="profile-info" id="profile-info"></p>
+          <p class="early-info" id="early-info"></p>
         </form>
 
         <div class="alert" id="alert" role="alert" hidden></div>
@@ -138,6 +144,11 @@
               <div class="tile-label">Średnia roczna stopa zwrotu netto</div>
             </div>
           </div>
+          <div class="early-summary" id="early-summary" hidden>
+            <span class="early-summary-label">Opłata za wcześniejszy wykup</span>
+            <strong class="early-summary-value" id="early-fee-value">0,00 zł</strong>
+            <span class="early-summary-detail" id="early-fee-detail"></span>
+          </div>
         </section>
 
         <section class="card table-card" aria-labelledby="table-title">
@@ -157,6 +168,7 @@
                   <th scope="col">Skumulowane wpłaty</th>
                   <th scope="col">Naliczone odsetki</th>
                   <th scope="col">Podatek Belki</th>
+                  <th scope="col">Opłata wykupu</th>
                   <th scope="col">Wartość brutto</th>
                   <th scope="col">Wartość netto</th>
                 </tr>
@@ -169,6 +181,9 @@
         <p class="footnote">
           Założenia: 1 obligacja = 100 zł; wpłaty miesięczne lub jednorazowe; wykupy reinwestowane
           lub wypłacane; stopy roczne przeliczone miesięcznie; podatek Belki 19% (IKE 0%).
+          Opłata za wcześniejszy wykup (emisje od 1.09.2024): EDO/ROD 3 zł, COI/ROS 2 zł, TOS 1 zł,
+          DOR 0,70 zł, ROR 0,50 zł za sztukę; OTS bez opłaty, ale bez odsetek. Opłata jest
+          potrącana z odsetek i nie przekracza ich wysokości — kapitał 100 zł/szt. jest chroniony.
           Benchmarki to stałe średnie stopy (S&amp;P 500 ~10,2%, WIG20 ~7,5% rocznie) — bez kosztów
           i inflacji. Wyniki są szacunkowe.
         </p>

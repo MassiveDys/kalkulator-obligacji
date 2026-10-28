@@ -79,3 +79,29 @@ Wzorowana na załączonym zrzucie ekranu (nowoczesny interfejs GUI).
   - Wdrożenie zmian na repozytorium GitHub i aktualizacja GitHub Pages.
 
 - **Status v1.4 [Coderweb]**: Gotowe - wpłata jednorazowa i benchmarki S&P 500 / WIG20 wdrożone, opublikowane: https://massivedys.github.io/kalkulator-obligacji/
+
+- **Status Web v1.3 [Coderweb]**: Gotowe — wdrożono wpłatę jednorazową, benchmarki S&P 500 / WIG20 i opublikowano na https://massivedys.github.io/kalkulator-obligacji/ (testy PASS).
+
+
+## Zadanie: Wersja Web — Wcześniejszy (przedterminowy) wykup obligacji
+- **Wymagania użytkownika**:
+  1. Opcja wypłaty/zakończenia obligacji przed czasem (np. zakup 10-letnich EDO, ale wypłata po 5 latach).
+  2. Uwzględnienie realnych kosztów i zasad wcześniejszego wykupu w polskich obligacjach skarbowych:
+     - Tabela oficjalnych opłat (stawki aktualne od września 2024):
+       * EDO (10-letnie): 3,00 zł za sztukę (100 zł)
+       * COI (4-letnie): 2,00 zł za sztukę
+       * TOS (3-letnie): 1,00 zł za sztukę
+       * DOR (2-letnie): 0,70 zł za sztukę
+       * ROR (1-roczne): 0,50 zł za sztukę
+       * ROS (6-letnie): 2,00 zł za sztukę
+       * ROD (12-letnie): 3,00 zł za sztukę
+       * OTS (3-miesięczne): brak wcześniejszego wykupu
+     - Ochrona nominału: opłata potrącana jest z narosłych odsetek i nie może przewyższyć wartości odsetek (zwracane co najmniej 100 zł za sztukę).
+     - Podstawa podatku Belki (19%): odsetki pomniejszone o opłatę za przedterminowy wykup (w IKE 0% podatku).
+     - Kafelki podsumowania oraz tabela roczna pokazujące pobraną opłatę likwidacyjną.
+  3. Realizacja i publikacja wyłącznie dla wersji Web na GitHub Pages.
+- **Zadanie [Coderweb]**:
+  - Implementacja opcji w web/index.html, logiki w web/bonds.js, interfejsu w web/app.js i wykresów w web/charts.js.
+  - Wdrożenie na GitHub Pages i weryfikacja.
+
+- **Status v1.5 [Coderweb]**: Gotowe - wcześniejszy wykup z opłatami wdrożony i opublikowany: https://massivedys.github.io/kalkulator-obligacji/
