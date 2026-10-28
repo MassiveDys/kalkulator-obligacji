@@ -1,5 +1,5 @@
 /* Service worker: offline dla kalkulatora (cache-first dla plików, sieć dla nawigacji). */
-const CACHE = "kalkulator-obligacji-v5";
+const CACHE = "kalkulator-obligacji-v6";
 const ASSETS = [
   "./",
   "./index.html",

@@ -1430,3 +1430,22 @@ tbody tr.is-winner:hover td {
     font-size: 11.5px;
   }
 }
+
+@media (max-width: 640px) {
+  .winner-body {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .winner-stats {
+    width: 100%;
+  }
+
+  .winner-stat {
+    flex: 1 1 0;
+  }
+
+  .winner-value {
+    font-size: clamp(13px, 4vw, 17px);
+  }
+}
