@@ -253,6 +253,148 @@
     }
   }
 
+  /* ------------------------------------------------------ dymki (tooltipy) */
+  const TIPS = {
+    margin:
+      "Marża to stały dodatek do inflacji (EDO, COI, ROS, ROD) albo do stopy NBP (DOR). " +
+      "Np. inflacja 3% + marża 2% = 5% rocznie od 2. roku. ROR nie ma marży, a TOS i OTS mają stałą stopę. " +
+      "Marża zależy od oferty Ministerstwa Finansów w momencie zakupu i jest stała przez cały okres obligacji.",
+    inflation:
+      "Założona średnia roczna inflacja w kolejnych latach (od 2. roku). " +
+      "Dla EDO, COI, ROS i ROD oprocentowanie = inflacja + marża, więc inflacja bezpośrednio podnosi odsetki. " +
+      "To scenariusz, nie prognoza — zmień wartość, aby sprawdzić wynik przy wyższej lub niższej inflacji.",
+    nbp:
+      "Stopa referencyjna NBP. Określa oprocentowanie obligacji DOR (stopa NBP + marża) i ROR (stopa NBP). " +
+      "Dla EDO, COI, TOS, OTS, ROS i ROD nie ma wpływu — dlatego w Obliczeniach pole jest nieaktywne dla tych serii. " +
+      "W Rankingu i Porównaniu jest zawsze aktywne, bo liczone są też DOR i ROR.",
+  };
+
+  const TIP_LABELS = {
+    margin: "marża ponad inflację / NBP",
+    inflation: "inflacja",
+    nbp: "stopa NBP",
+  };
+
+  let tipCounter = 0;
+  let tipsBound = false;
+
+  function positionTip(host) {
+    const pop = host.querySelector(".tip-pop");
+    const button = host.querySelector(".tip-btn");
+    if (!pop || !button) return;
+    const viewport = window.innerWidth;
+    const width = Math.min(320, viewport - 48);
+    const rect = button.getBoundingClientRect();
+    const left = Math.max(12, Math.min(rect.left, viewport - width - 12));
+    pop.style.left = left + "px";
+    pop.style.top = rect.bottom + 8 + "px";
+    pop.style.setProperty(
+      "--tip-arrow",
+      Math.max(8, Math.min(width - 20, rect.left - left + 7)) + "px"
+    );
+    host.classList.remove("is-above");
+    const popHeight = pop.getBoundingClientRect().height;
+    if (
+      rect.bottom + 8 + popHeight > window.innerHeight - 8 &&
+      rect.top - 8 - popHeight > 8
+    ) {
+      host.classList.add("is-above");
+      pop.style.top = Math.max(8, rect.top - popHeight - 8) + "px";
+    }
+  }
+
+  function openTip(host) {
+    document.querySelectorAll(".tip.is-open").forEach((other) => {
+      if (other !== host) closeTip(other);
+    });
+    positionTip(host);
+    host.classList.add("is-open");
+    const button = host.querySelector(".tip-btn");
+    if (button) button.setAttribute("aria-expanded", "true");
+  }
+
+  function closeTip(host) {
+    host.classList.remove("is-open");
+    const button = host.querySelector(".tip-btn");
+    if (button) button.setAttribute("aria-expanded", "false");
+  }
+
+  function initTooltips() {
+    document.querySelectorAll(".tip[data-tip]").forEach((host) => {
+      if (host.dataset.ready === "1") return;
+      const key = host.dataset.tip;
+      const text = TIPS[key];
+      if (!text) return;
+      host.dataset.ready = "1";
+      tipCounter += 1;
+      const id = "tip-" + key + "-" + tipCounter;
+
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "tip-btn";
+      button.textContent = "?";
+      button.setAttribute("aria-label", "Wyjaśnienie: " + (TIP_LABELS[key] || key));
+      button.setAttribute("aria-describedby", id);
+      button.setAttribute("aria-expanded", "false");
+
+      const pop = document.createElement("span");
+      pop.className = "tip-pop";
+      pop.id = id;
+      pop.setAttribute("role", "tooltip");
+      pop.textContent = text;
+
+      host.appendChild(button);
+      host.appendChild(pop);
+
+      button.addEventListener("click", (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        if (host.classList.contains("is-open")) closeTip(host);
+        else openTip(host);
+      });
+
+      button.addEventListener("keydown", (event) => {
+        if (event.key === "Escape") {
+          closeTip(host);
+          button.blur();
+        }
+      });
+
+      button.addEventListener("focus", () => {
+        positionTip(host);
+        button.setAttribute("aria-expanded", "true");
+      });
+      button.addEventListener("blur", () => {
+        button.setAttribute("aria-expanded", host.classList.contains("is-open") ? "true" : "false");
+      });
+
+      host.addEventListener("mouseenter", () => positionTip(host));
+    });
+
+    if (!tipsBound) {
+      tipsBound = true;
+      document.addEventListener("click", (event) => {
+        document.querySelectorAll(".tip.is-open").forEach((host) => {
+          if (!host.contains(event.target)) closeTip(host);
+        });
+      });
+      document.addEventListener("keydown", (event) => {
+        if (event.key !== "Escape") return;
+        document.querySelectorAll(".tip.is-open").forEach((host) => closeTip(host));
+      });
+      window.addEventListener("resize", () => {
+        document.querySelectorAll(".tip.is-open").forEach((host) => positionTip(host));
+      });
+      window.addEventListener(
+        "scroll",
+        () => {
+          document.querySelectorAll(".tip.is-open").forEach((host) => positionTip(host));
+        },
+        { passive: true }
+      );
+    }
+  }
+
   /* --------------------------------------------------------- PWA */
   function initPwa() {
     if (!("serviceWorker" in navigator)) return;
@@ -286,6 +428,7 @@
     onTabChange,
     initTabs,
     initHeaderActions,
+    initTooltips,
     initPwa,
     data,
   };

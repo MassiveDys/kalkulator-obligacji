@@ -86,22 +86,32 @@
             </div>
 
             <div class="field">
-              <label for="margin">Marża ponad inflację / NBP (%)</label>
+              <div class="label-row">
+                <label for="margin">Marża ponad inflację / NBP (%)</label>
+                <span class="tip" data-tip="margin"></span>
+              </div>
               <input id="margin" name="margin" type="text" inputmode="decimal" autocomplete="off" value="2,00">
               <select id="margin-scenario" class="scenario" aria-label="Scenariusz marży"></select>
               <p class="field-note" id="margin-note"></p>
             </div>
 
             <div class="field">
-              <label for="inflation">Założona średnia inflacja od 2. roku (%)</label>
+              <div class="label-row">
+                <label for="inflation">Założona średnia inflacja od 2. roku (%)</label>
+                <span class="tip" data-tip="inflation"></span>
+              </div>
               <input id="inflation" name="inflation" type="text" inputmode="decimal" autocomplete="off" value="3,0">
               <select id="inflation-scenario" class="scenario" aria-label="Scenariusz inflacji"></select>
               <p class="field-note" id="inflation-note"></p>
             </div>
 
             <div class="field">
-              <label for="nbp">Stopa NBP (%)</label>
+              <div class="label-row">
+                <label for="nbp">Stopa NBP (%)</label>
+                <span class="tip" data-tip="nbp"></span>
+              </div>
               <input id="nbp" name="nbp" type="text" inputmode="decimal" autocomplete="off" value="5,75">
+              <p class="field-note" id="nbp-note"></p>
             </div>
           </div>
 
@@ -242,12 +252,19 @@
               <p class="field-hint">0–11; np. 1 rok i 6 miesięcy = 1 + 6.</p>
             </div>
             <div class="field">
-              <label for="rk-inflation">Inflacja (%)</label>
+              <div class="label-row">
+                <label for="rk-inflation">Inflacja (%)</label>
+                <span class="tip" data-tip="inflation"></span>
+              </div>
               <input id="rk-inflation" type="text" inputmode="decimal" value="3,00">
             </div>
             <div class="field">
-              <label for="rk-nbp">Stopa NBP (%)</label>
+              <div class="label-row">
+                <label for="rk-nbp">Stopa NBP (%)</label>
+                <span class="tip" data-tip="nbp"></span>
+              </div>
               <input id="rk-nbp" type="text" inputmode="decimal" value="5,75">
+              <p class="field-note" id="rk-nbp-note">Wpływa na DOR i ROR; pozostałe serie zależą od inflacji lub stałej stopy.</p>
             </div>
           </div>
 
@@ -362,11 +379,17 @@
           <div class="actions">
             <div class="grid grid-inline">
               <div class="field">
-                <label for="cmp-inflation">Inflacja dla obu (%)</label>
+                <div class="label-row">
+                  <label for="cmp-inflation">Inflacja dla obu (%)</label>
+                  <span class="tip" data-tip="inflation"></span>
+                </div>
                 <input id="cmp-inflation" type="text" inputmode="decimal" value="3,00">
               </div>
               <div class="field">
-                <label for="cmp-nbp">Stopa NBP dla obu (%)</label>
+                <div class="label-row">
+                  <label for="cmp-nbp">Stopa NBP dla obu (%)</label>
+                  <span class="tip" data-tip="nbp"></span>
+                </div>
                 <input id="cmp-nbp" type="text" inputmode="decimal" value="5,75">
               </div>
             </div>

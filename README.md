@@ -47,6 +47,9 @@ python -m http.server 8766
 - Wersja web: zakładka **Rentier** — stała wypłata miesięczna, „na ile lat wystarczy kapitał”,
   łączne wypłaty, pozostały kapitał i podatek; wcześniejszy wykup z opłatą przy braku gotówki.
 - Wersja web: **wartości realne** (po inflacji) — wartość netto i zysk w dzisiejszych złotówkach.
+- Wersja web: **dymki z wyjaśnieniami** przy „marży”, „inflacji” i „stopie NBP” w Obliczeniach,
+  Rankingu i Porównaniu; działają na hover, fokus i dotyk, a pod polem NBP w Obliczeniach pojawia
+  się nota, czy pole jest aktywne dla wybranej serii (DOR/ROR) i dlaczego.
 - Wersja web: **permalink** — cały scenariusz w URL (`?d=…`) i w `localStorage`; „Kopiuj link” i „Reset”.
 - Wersja web: **PWA/offline** — manifest, ikony i service worker; instalacja na telefonie, praca bez sieci.
 

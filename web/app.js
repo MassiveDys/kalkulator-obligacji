@@ -60,6 +60,7 @@
     inflationScenario: document.getElementById("inflation-scenario"),
     inflationNote: document.getElementById("inflation-note"),
     nbp: document.getElementById("nbp"),
+    nbpNote: document.getElementById("nbp-note"),
     ike: document.getElementById("ike"),
     early: document.getElementById("early"),
     real: document.getElementById("real"),
@@ -227,6 +228,8 @@
     el.inflation.disabled = !inflationEnabled;
     el.inflationScenario.disabled = !inflationEnabled;
     el.nbp.disabled = kind !== "nbp";
+
+    updateNbpInfo(profile);
 
     buildScenarios(profile);
 
@@ -520,6 +523,25 @@
   function scheduleSilentCalculate() {
     window.clearTimeout(state.silentTimer);
     state.silentTimer = window.setTimeout(() => calculateAndRender(false), 350);
+  }
+
+  function updateNbpInfo(profile) {
+    if (!el.nbpNote) return;
+    const p = profile || PROFILES[currentCode()];
+    if (!p) return;
+    if (p.kind === "nbp") {
+      el.nbpNote.textContent =
+        p.code === "ROR"
+          ? "Aktywne: ROR jest oprocentowany bezpośrednio stopą NBP."
+          : "Aktywne: DOR = stopa NBP + marża. Stopa NBP wpływa na odsetki od 2. roku.";
+      el.nbpNote.classList.remove("is-muted");
+    } else {
+      el.nbpNote.textContent =
+        "Aktywne tylko dla DOR i ROR. Ta seria (" +
+        p.code +
+        ") nie zależy od stopy NBP — pole jest nieaktywne.";
+      el.nbpNote.classList.add("is-muted");
+    }
   }
 
   function updateEarlyInfo() {

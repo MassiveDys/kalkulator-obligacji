@@ -1,8 +1,8 @@
 # STATUS - kalkulator-obligacji
 
-- **Stan:** gotowe (Wersja Web: wszystkie moduły + nowy ranking „Co wybrać?” opublikowane na GitHub Pages)
+- **Stan:** gotowe (Wersja Web: moduły + ranking + dymki wyjaśniające opublikowane na GitHub Pages)
 - **Ostatnia zmiana:** 2026-10-28
-- **Następny krok:** Zbieranie opinii użytkownika po wdrożeniu rankingu (domyślnie 100 000 zł / 2 lata)
+- **Następny krok:** Zbieranie opinii użytkownika po wdrożeniu dymków (marża, inflacja, stopa NBP) i rankingu
 
 ## Co działa
 - Samodzielna aplikacja .exe dla Windows (builds/kalkulator-obligacji.exe, v1.2)
@@ -18,9 +18,10 @@
   - **Portfel / drabina** — do 8 pozycji (seria + kwota + miesiąc startu), reinwestycja w tę samą serię, harmonogram wykupów, IRR
   - **Tryb rentierski** — stała wypłata miesięczna, ile lat wystarczy kapitału, wypłaty realne, podatek
   - **Wartości realne** — wartość netto i zysk w dzisiejszych złotówkach (dyskonto inflacją)
+  - **Dymki „?”** — wyjaśnienia marży, inflacji i stopy NBP w Obliczeniach, Rankingu i Porównaniu; hover/fokus/dotyk, Escape i klik poza, nota pod NBP o aktywności dla DOR/ROR
   - **Permalink stanu** — parametry wszystkich modułów (w tym rankingu) w URL i `localStorage`
-  - **PWA/offline** — instalacja na telefonie, cache-first service worker (cache v7)
-  - Weryfikacja: 39/39 testów silnika (`node tools/test-web.mjs`), 38/38 testów DOM (jsdom), 0 błędów w konsoli, HTTP 200
+  - **PWA/offline** — instalacja na telefonie, cache-first service worker (cache v8)
+  - Weryfikacja: 45/45 testów silnika (`node tools/test-web.mjs`), 49/49 testów DOM (jsdom), 0 błędów w konsoli, HTTP 200
 
 ## Otwarte problemy
 - Brak

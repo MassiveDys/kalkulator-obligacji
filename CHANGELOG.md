@@ -1,5 +1,13 @@
 # CHANGELOG — kalkulator-obligacji
 
+## [1.8.0] — 2026-10-28
+- Dodano dostępne dymki „?” z wyjaśnieniami: **marża ponad inflację / NBP**, **założona inflacja** i **stopa NBP** — w Obliczeniach, Rankingu i Porównaniu.
+- Dymki działają na hover, fokusie klawiatury oraz dotykiem/kliknięciem na telefonie; zamykają się Escape, kliknięciem poza i same pozycjonują się w kadrze (także nad polem, gdy brak miejsca pod spodem).
+- Pod polem „Stopa NBP (%)” w Obliczeniach pojawia się dynamiczna nota: dla DOR/ROR wyjaśnia zależność od NBP, dla pozostałych serii informuje, że pole jest nieaktywne i dlaczego.
+- W Rankingu dodano notę, że stopa NBP wpływa na DOR/ROR, a pozostałe serie zależą od inflacji lub stałej stopy.
+- Dostępność: `aria-label`, `aria-describedby`, `aria-expanded`, fokus klawiatury, zamykanie Escape, treść dymków jako `role="tooltip"`.
+- Testy: 45/45 silnika (w tym kontrola struktury dymków i noty NBP) oraz 49/49 testów DOM; cache service workera podbity do v8.
+
 ## [1.7.0] — 2026-10-28
 - Dodano zakładkę **Ranking / „Co wybrać?”**: jedna wpłata, wybrany okres (lata + miesiące) i porównanie wszystkich serii obligacji.
 - Ranking uwzględnia wykup naturalny, wcześniejszy wykup z oficjalną opłatą (podatek Belki po prowizji) oraz rolowanie kapitału i kuponów w tę samą serię; końcówka bez pełnego cyklu zostaje w gotówce.

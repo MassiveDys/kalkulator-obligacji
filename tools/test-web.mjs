@@ -3,6 +3,7 @@
  * Uruchomienie: node tools/test-web.mjs
  */
 import { createRequire } from "node:module";
+import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -148,6 +149,17 @@ check("Ranking: ROR 1 rok naturalny", rank1.results.find((x) => x.code === "ROR"
 const rank30 = Bonds.rankBonds({ amount: 100000, years: 2, months: 6, inflation: 3, nbp: 5.75 });
 check("Ranking: 2,5 roku — końcówka w gotówce", rank30.results.find((x) => x.code === "ROR").mode.indexOf("gotówka") >= 0, rank30.results.find((x) => x.code === "ROR").mode);
 check("Ranking: 2,5 roku — DOR roluje 1 cykl", rank30.results.find((x) => x.code === "DOR").cycles === 1, rank30.results.find((x) => x.code === "DOR").cycles);
+
+/* 9. Dymki z wyjaśnieniami (struktura HTML + teksty). */
+const html = fs.readFileSync(path.join(here, "..", "web", "index.html"), "utf8");
+const uiSource = fs.readFileSync(path.join(here, "..", "web", "ui.js"), "utf8");
+const countTips = (key) => (html.match(new RegExp('data-tip="' + key + '"', "g")) || []).length;
+check("Dymki: marża w Obliczeniach", countTips("margin") === 1, countTips("margin"));
+check("Dymki: inflacja w 3 modułach", countTips("inflation") === 3, countTips("inflation"));
+check("Dymki: stopa NBP w 3 modułach", countTips("nbp") === 3, countTips("nbp"));
+check("Dymki: notka pod stopą NBP w Obliczeniach", html.indexOf('id="nbp-note"') >= 0);
+check("Dymki: teksty w ui.js", uiSource.indexOf("Stopa referencyjna NBP") >= 0 && uiSource.indexOf("Marża to stały dodatek") >= 0 && uiSource.indexOf("Założona średnia roczna inflacja") >= 0);
+check("Dymki: aria-describedby i aria-expanded", uiSource.indexOf('setAttribute("aria-describedby"') >= 0 && uiSource.indexOf('setAttribute("aria-expanded"') >= 0);
 
 console.log("PASS " + pass + " FAIL " + fails.length);
 fails.forEach((item) => console.log("FAIL: " + item));
