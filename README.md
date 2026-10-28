@@ -98,7 +98,7 @@ builds\kalkulator-obligacji.exe --self-test builds\smoke-test.txt
   - `app.js`, `compare.js`, `portfolio.js`, `rentier.js` — moduły interfejsu
   - `ui.js` — formatowanie, stan w URL, zakładki, schowek, PWA
   - `charts.js` — wykresy canvas (rejestr wykresów liniowych i słupkowych)
-  - `manifest.webmanifest`, `sw.js`, ikony SVG — tryb offline/PWA
+  - `manifest.webmanifest`, `sw.js`, ikony SVG — tryb offline/PWA (przy każdej publikacji podnieś numer `CACHE` w `sw.js`)
 - `.github/workflows/pages.yml` — automatyczne wdrożenie `web/` na Pages
 - `src/bonds.py` — silnik obliczeniowy wersji desktop
 - `src/app.py` — GUI (CustomTkinter) i tryb `--self-test`

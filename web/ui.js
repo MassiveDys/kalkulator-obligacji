@@ -158,6 +158,7 @@
     persist();
     if (options.silent !== true) {
       window.requestAnimationFrame(() => window.BondCharts.redraw());
+      window.setTimeout(() => window.BondCharts.redraw(), 150);
     }
     listeners.forEach((fn) => fn(target));
   }
