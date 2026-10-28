@@ -1,4 +1,4 @@
-﻿# STATUS - kalkulator-obligacji
+# STATUS - kalkulator-obligacji
 
 - **Stan:** gotowe (Wersja Web: wszystkie moduły + nowy ranking „Co wybrać?” opublikowane na GitHub Pages)
 - **Ostatnia zmiana:** 2026-10-28
@@ -19,7 +19,7 @@
   - **Tryb rentierski** — stała wypłata miesięczna, ile lat wystarczy kapitału, wypłaty realne, podatek
   - **Wartości realne** — wartość netto i zysk w dzisiejszych złotówkach (dyskonto inflacją)
   - **Permalink stanu** — parametry wszystkich modułów (w tym rankingu) w URL i `localStorage`
-  - **PWA/offline** — instalacja na telefonie, cache-first service worker (cache v6)
+  - **PWA/offline** — instalacja na telefonie, cache-first service worker (cache v7)
   - Weryfikacja: 39/39 testów silnika (`node tools/test-web.mjs`), 38/38 testów DOM (jsdom), 0 błędów w konsoli, HTTP 200
 
 ## Otwarte problemy

@@ -1,5 +1,5 @@
 /* Service worker: offline dla kalkulatora (cache-first dla plików, sieć dla nawigacji). */
-const CACHE = "kalkulator-obligacji-v6";
+const CACHE = "kalkulator-obligacji-v7";
 const ASSETS = [
   "./",
   "./index.html",
@@ -22,7 +22,16 @@ self.addEventListener("install", (event) => {
   event.waitUntil(
     caches
       .open(CACHE)
-      .then((cache) => cache.addAll(ASSETS))
+      .then((cache) =>
+        Promise.all(
+          ASSETS.map((url) =>
+            fetch(new Request(url, { cache: "reload" })).then((response) => {
+              if (!response || !response.ok) throw new Error("Brak pliku: " + url);
+              return cache.put(url, response);
+            })
+          )
+        )
+      )
       .then(() => self.skipWaiting())
   );
 });
