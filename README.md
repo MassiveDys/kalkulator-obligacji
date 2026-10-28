@@ -1,0 +1,65 @@
+# Kalkulator polskich obligacji skarbowych
+
+Aplikacja desktopowa dla Windows (.exe) do szacowania zysku z regularnego
+kupowania polskich obligacji skarbowych. Pozwala porównać typy obligacji,
+ustawić własne oprocentowanie i sprawdzić wpływ podatku Belki oraz konta IKE.
+
+## Funkcje
+
+- 8 typów obligacji: EDO, COI, TOS, DOR, ROR, OTS, ROS, ROD — parametry można edytować.
+- Miesięczna dopłata, liczba lat dopłat oraz niezależny horyzont (moment likwidacji).
+- Reinwestycja środków z wykupów do końca horyzontu (pełny cykl obligacji).
+- Tryb wykupów: „Reinwestuj wykupy” albo „Wypłacaj na konto” (domyślnie wypłaty).
+- Zakładka **Wykresy**: terminarz zapadalności transz (kapitał + odsetki netto) oraz
+  wartość oszczędności na tle wpłaconego kapitału.
+- Czytelne GUI w stylu kart: kafelki podsumowania, tabela roczna, eksport CSV.
+- Rozwijane scenariusze dla marży i inflacji z możliwością wpisania własnej wartości:
+  - marża: aktualna oferta MF dla wybranego typu, wysoka 2,50%, średnia 1,50%, niska 1,00% (2018–2021);
+  - inflacja: cel NBP 2,50%, bazowa 3,00%, średnia 15 lat 3,60%, podwyższona 5,00%, wysoka 8,00%.
+- Checkbox IKE — po zaznaczeniu nie nalicza podatku Belki (19%).
+
+## Uruchomienie
+
+Gotowy plik: `builds\kalkulator-obligacji.exe` (nie wymaga Pythona).
+
+Ze źródeł:
+
+```powershell
+D:\openbot\tools\venv-bond\Scripts\python.exe src\app.py
+```
+
+## Build
+
+```powershell
+D:\openbot\tools\venv-bond\Scripts\pyinstaller.exe --noconfirm --clean --onefile `
+  --windowed --name kalkulator-obligacji --icon assets\icon.ico `
+  --add-data "assets\icon.ico;assets" --distpath builds `
+  --workpath D:\openbot\build\kalkulator-obligacji `
+  --specpath D:\openbot\build\kalkulator-obligacji src\app.py
+```
+
+Test dymny (zapisuje raport i kończy z kodem 0):
+
+```powershell
+builds\kalkulator-obligacji.exe --self-test builds\smoke-test.txt
+```
+
+## Założenia obliczeń
+- 1 obligacja = 100 zł; kupowane są pełne obligacje, reszta zostaje w gotówce.
+- Odsetki naliczane miesięcznie według stopy efektywnej z rocznej (kapitalizacja
+  roczna dla EDO/TOS/ROS/ROD/OTS, wypłata odsetek dla COI/DOR/ROR).
+- Po wykupie transzy środki są reinwestowane w ten sam typ obligacji.
+- Dla EDO/COI/ROS/ROD od 2. roku: inflacja + marża; dla DOR/ROR: stopa NBP + marża;
+  TOS/OTS: stała stopa z pola „Oprocentowanie 1. roku”.
+- Podatek Belki 19% pobierany przy wypłacie odsetek lub wykupie; IKE = 0%.
+- Wartość brutto = portfel przed podatkiem (z doliczonymi już zapłaconymi podatkami),
+  netto = po podatku. Stopa zwrotu netto to XIRR (uwzględnia rozłożenie wpłat w czasie).
+- Wyniki są szacunkowe; nie uwzględniają prowizji, inflacji poza modelem ani zmian stóp.
+- Wartości scenariuszy marży i inflacji są orientacyjne — to punkty wyjścia, nie prognoza.
+
+## Struktura
+
+- `src/bonds.py` — silnik obliczeniowy
+- `src/app.py` — GUI (CustomTkinter) i tryb `--self-test`
+- `builds/` — plik .exe i raport testu
+- `assets/` — ikona i zrzut referencyjny

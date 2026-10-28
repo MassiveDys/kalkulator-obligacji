@@ -1,0 +1,10 @@
+# pliki budowania i cache
+builds/
+__pycache__/
+*.pyc
+*.pyo
+
+# systemowe
+Thumbs.db
+.DS_Store
+desktop.ini

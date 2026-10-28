@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#eef2f7">
+  <meta name="description" content="Kalkulator polskich obligacji skarbowych: EDO, COI, TOS, DOR, ROR, OTS, ROS, ROD. Dopłaty miesięczne, podatek Belki lub IKE, drabina zapadalności i wykresy.">
+  <meta property="og:type" content="website">
+  <meta property="og:locale" content="pl_PL">
+  <meta property="og:title" content="Kalkulator obligacji skarbowych">
+  <meta property="og:description" content="Policz zysk z EDO, COI, TOS, DOR, ROR, OTS, ROS i ROD: dopłaty miesięczne, podatek Belki lub IKE, tabela rok po roku i wykresy.">
+  <meta name="twitter:card" content="summary">
+  <title>Kalkulator obligacji skarbowych</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%231f4e79'/%3E%3Cpath d='M8 22V14M14 22V10M20 22V16M26 22V8' stroke='%23a6e3a1' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app">
+    <header class="masthead">
+      <div class="masthead-text">
+        <h1>Kalkulator obligacji skarbowych</h1>
+        <p>Stałe miesięczne dopłaty &bull; wybór rodzaju obligacji &bull; podatek Belki / IKE &bull; wykresy</p>
+      </div>
+    </header>
+
+    <div class="tabs" role="tablist" aria-label="Widok">
+      <button type="button" class="tab is-active" id="tab-calc" role="tab" aria-selected="true" aria-controls="panel-calc" data-tab="calc">Obliczenia</button>
+      <button type="button" class="tab" id="tab-charts" role="tab" aria-selected="false" aria-controls="panel-charts" data-tab="charts" tabindex="-1">Wykresy</button>
+    </div>
+
+    <main>
+      <section class="panel" id="panel-calc" role="tabpanel" aria-labelledby="tab-calc">
+        <form class="card controls" id="form" novalidate>
+          <div class="grid">
+            <div class="field field-profile">
+              <label for="profile">Rodzaj obligacji</label>
+              <select id="profile" name="profile"></select>
+              <p class="field-hint" id="profile-short"></p>
+            </div>
+
+            <div class="field">
+              <label for="deposit">Miesięczna dopłata (zł)</label>
+              <input id="deposit" name="deposit" type="text" inputmode="decimal" autocomplete="off" value="400">
+            </div>
+
+            <div class="field">
+              <label for="years">Liczba lat dopłat</label>
+              <input id="years" name="years" type="text" inputmode="numeric" autocomplete="off" value="10">
+            </div>
+
+            <div class="field">
+              <label for="horizon">Horyzont / likwidacja (lata)</label>
+              <input id="horizon" name="horizon" type="text" inputmode="numeric" autocomplete="off" value="20">
+            </div>
+
+            <div class="field">
+              <label for="rate1">Oprocentowanie 1. roku (%)</label>
+              <input id="rate1" name="rate1" type="text" inputmode="decimal" autocomplete="off" value="5,35">
+            </div>
+
+            <div class="field">
+              <label for="margin">Marża ponad inflację / NBP (%)</label>
+              <input id="margin" name="margin" type="text" inputmode="decimal" autocomplete="off" value="2,00">
+              <select id="margin-scenario" class="scenario" aria-label="Scenariusz marży"></select>
+              <p class="field-note" id="margin-note"></p>
+            </div>
+
+            <div class="field">
+              <label for="inflation">Założona średnia inflacja od 2. roku (%)</label>
+              <input id="inflation" name="inflation" type="text" inputmode="decimal" autocomplete="off" value="3,0">
+              <select id="inflation-scenario" class="scenario" aria-label="Scenariusz inflacji"></select>
+              <p class="field-note" id="inflation-note"></p>
+            </div>
+
+            <div class="field">
+              <label for="nbp">Stopa NBP (%)</label>
+              <input id="nbp" name="nbp" type="text" inputmode="decimal" autocomplete="off" value="5,75">
+            </div>
+          </div>
+
+          <div class="actions">
+            <label class="check">
+              <input type="checkbox" id="ike">
+              <span>Konto IKE (bez podatku Belki)</span>
+            </label>
+
+            <div class="segmented" role="group" aria-label="Tryb po zapadnięciu">
+              <button type="button" data-mode="reinvest" aria-pressed="false">Reinwestuj wykupy</button>
+              <button type="button" data-mode="payout" aria-pressed="true" class="is-active">Wypłacaj na konto</button>
+            </div>
+
+            <button type="submit" class="primary" id="calc-button">Oblicz</button>
+          </div>
+
+          <p class="profile-info" id="profile-info"></p>
+        </form>
+
+        <div class="alert" id="alert" role="alert" hidden></div>
+
+        <section class="card summary" aria-label="Podsumowanie wyników">
+          <div class="tiles">
+            <div class="tile">
+              <div class="tile-value" id="tile-deposits">&mdash;</div>
+              <div class="tile-label">Suma wpłat</div>
+            </div>
+            <div class="tile">
+              <div class="tile-value" id="tile-bonds">&mdash;</div>
+              <div class="tile-label">Liczba obligacji (z wpłat)</div>
+            </div>
+            <div class="tile">
+              <div class="tile-value" id="tile-gross">&mdash;</div>
+              <div class="tile-label">Wartość brutto na koniec</div>
+            </div>
+            <div class="tile">
+              <div class="tile-value tile-green" id="tile-net">&mdash;</div>
+              <div class="tile-label">Wartość netto (na rękę)</div>
+            </div>
+            <div class="tile">
+              <div class="tile-value tile-green" id="tile-profit">&mdash;</div>
+              <div class="tile-label">Zysk netto</div>
+            </div>
+            <div class="tile">
+              <div class="tile-value tile-green" id="tile-irr">&mdash;</div>
+              <div class="tile-label">Średnia roczna stopa zwrotu netto</div>
+            </div>
+          </div>
+        </section>
+
+        <section class="card table-card" aria-labelledby="table-title">
+          <div class="card-head">
+            <h2 id="table-title">Przebieg rok po roku</h2>
+            <button type="button" class="ghost" id="export-button">
+              <svg viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M10 2v9m0 0 3.2-3.2M10 11 6.8 7.8M3 13v3a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              Eksport CSV
+            </button>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th scope="col" class="col-year">Rok</th>
+                  <th scope="col">Wpłaty w roku</th>
+                  <th scope="col">Skumulowane wpłaty</th>
+                  <th scope="col">Naliczone odsetki</th>
+                  <th scope="col">Podatek Belki</th>
+                  <th scope="col">Wartość brutto</th>
+                  <th scope="col">Wartość netto</th>
+                </tr>
+              </thead>
+              <tbody id="rows"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <p class="footnote">
+          Założenia: 1 obligacja = 100 zł; wykupy reinwestowane lub wypłacane; stopy roczne przeliczone
+          miesięcznie; podatek Belki 19% (IKE 0%). Wyniki są szacunkowe.
+        </p>
+      </section>
+
+      <section class="panel" id="panel-charts" role="tabpanel" aria-labelledby="tab-charts" hidden>
+        <div class="card charts-card">
+          <div class="card-head">
+            <div>
+              <h2>Drabina obligacyjna &mdash; powrót środków i wartość portfela</h2>
+              <p class="subtitle" id="charts-subtitle">Wpisz parametry i kliknij „Oblicz”, aby odświeżyć wykresy.</p>
+            </div>
+          </div>
+
+          <figure class="chart">
+            <figcaption>Ile kapitału i odsetek wraca w każdym roku</figcaption>
+            <div class="legend">
+              <span class="legend-item"><i class="swatch swatch-deposit"></i><span id="legend-phase">Faza wpłat</span></span>
+              <span class="legend-item"><i class="swatch swatch-maturity"></i>Faza wykupów</span>
+              <span class="legend-item"><i class="swatch swatch-principal"></i>Kapitał (100 zł/szt.)</span>
+              <span class="legend-item"><i class="swatch swatch-interest"></i>Odsetki netto</span>
+            </div>
+            <div class="canvas-wrap">
+              <canvas id="chart-ladder" height="280" aria-label="Wykres słupkowy: kapitał i odsetki wracające w każdym roku"></canvas>
+            </div>
+          </figure>
+
+          <figure class="chart">
+            <figcaption>Wartość oszczędności a wpłacony kapitał</figcaption>
+            <div class="legend">
+              <span class="legend-item"><i class="swatch swatch-net"></i><span id="legend-wealth">Majątek netto</span></span>
+              <span class="legend-item"><i class="swatch swatch-capital"></i>Wpłacony kapitał</span>
+              <span class="legend-item"><i class="swatch swatch-profit"></i>Zysk netto</span>
+            </div>
+            <div class="canvas-wrap">
+              <canvas id="chart-wealth" height="280" aria-label="Wykres liniowy: wartość netto oszczędności i wpłacony kapitał w czasie"></canvas>
+            </div>
+          </figure>
+        </div>
+      </section>
+    </main>
+
+    <footer class="page-foot">
+      Kalkulator edukacyjny. Nie jest ofertą inwestycyjną ani rekomendacją. Obliczenia wykonują się
+      w przeglądarce — dane nie są wysyłane na serwer.
+    </footer>
+  </div>
+
+  <script src="bonds.js"></script>
+  <script src="charts.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
