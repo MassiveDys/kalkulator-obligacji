@@ -127,6 +127,33 @@ input:focus-visible {
   padding: 20px 20px 16px;
 }
 
+.plan-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px 16px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--border);
+}
+
+.plan-label {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.plan-bar .segmented {
+  margin-left: auto;
+}
+
+.field[hidden] {
+  display: none;
+}
+
 .grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -580,6 +607,40 @@ tbody tr:hover td {
   background: rgba(31, 157, 85, 0.28);
 }
 
+.swatch-sp {
+  background: #c2410c;
+}
+
+.swatch-wig {
+  background: #7c3aed;
+}
+
+.bench-legend {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--grid);
+}
+
+.legend-check {
+  cursor: pointer;
+  user-select: none;
+}
+
+.legend-check input {
+  width: 15px;
+  height: 15px;
+  margin: 0;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+.bench-note {
+  margin: 6px 0 0;
+  font-size: 11px;
+  line-height: 1.4;
+  color: #8a99a9;
+}
+
 .canvas-wrap {
   position: relative;
   width: 100%;
@@ -650,6 +711,16 @@ tbody tr:hover td {
   .card {
     padding: 16px;
     border-radius: 14px;
+  }
+
+  .plan-bar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .plan-bar .segmented {
+    width: 100%;
+    margin-left: 0;
   }
 
   .controls {

@@ -1,8 +1,8 @@
 # Kalkulator polskich obligacji skarbowych
 
-Aplikacja desktopowa dla Windows (.exe) do szacowania zysku z regularnego
-kupowania polskich obligacji skarbowych. Pozwala porównać typy obligacji,
-ustawić własne oprocentowanie i sprawdzić wpływ podatku Belki oraz konta IKE.
+Kalkulator polskich obligacji skarbowych w wersji desktop (.exe) i web. Pozwala
+porównać typy obligacji, ustawić własne oprocentowanie i sprawdzić wpływ podatku
+Belki oraz konta IKE.
 
 ## Wersja web (online)
 
@@ -30,6 +30,9 @@ python -m http.server 8766
   - marża: aktualna oferta MF dla wybranego typu, wysoka 2,50%, średnia 1,50%, niska 1,00% (2018–2021);
   - inflacja: cel NBP 2,50%, bazowa 3,00%, średnia 15 lat 3,60%, podwyższona 5,00%, wysoka 8,00%.
 - Checkbox IKE — po zaznaczeniu nie nalicza podatku Belki (19%).
+- Wersja web: tryb **wpłaty jednorazowej** (np. 10 000 zł na 10 lat) obok dopłat miesięcznych.
+- Wersja web: na wykresie wartości porównanie z **S&P 500 (~10,2% rocznie)** i **WIG20 (~7,5% rocznie)**
+  przy identycznym planie wpłat; przełączniki widoczności i opcjonalny podatek Belki 19%.
 
 ## Uruchomienie
 
@@ -69,6 +72,8 @@ builds\kalkulator-obligacji.exe --self-test builds\smoke-test.txt
   netto = po podatku. Stopa zwrotu netto to XIRR (uwzględnia rozłożenie wpłat w czasie).
 - Wyniki są szacunkowe; nie uwzględniają prowizji, inflacji poza modelem ani zmian stóp.
 - Wartości scenariuszy marży i inflacji są orientacyjne — to punkty wyjścia, nie prognoza.
+- Benchmarki (S&P 500 ~10,2%, WIG20 ~7,5% rocznie): stała stopa, miesięczne przeliczenie,
+  zyski reinwestowane, opcjonalny podatek Belki 19%; bez kosztów, inflacji i zmienności rynku.
 
 ## Struktura
 

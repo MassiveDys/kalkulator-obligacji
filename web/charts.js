@@ -14,7 +14,7 @@
     capitalFill: "rgba(111, 156, 196, 0.13)",
   };
 
-  const state = { result: null, depositYears: 0 };
+  const state = { result: null, depositYears: 0, benchmarks: [], plan: "monthly" };
 
   function plNumber(value, decimals) {
     return new Intl.NumberFormat("pl-PL", {
@@ -41,12 +41,8 @@
     const exponent = Math.floor(Math.log10(raw));
     const base = Math.pow(10, exponent);
     const fraction = raw / base;
-    let nice;
-    if (fraction <= 1) nice = 1;
-    else if (fraction <= 2) nice = 2;
-    else if (fraction <= 2.5) nice = 2.5;
-    else if (fraction <= 5) nice = 5;
-    else nice = 10;
+    const candidates = [1, 1.5, 2, 2.5, 3, 4, 5, 6, 8, 10];
+    const nice = candidates.find((value) => fraction <= value) || 10;
     return nice * base;
   }
 
@@ -69,13 +65,14 @@
     const pad = { left: 56, right: 12, top: 12, bottom: 28 };
     const plotWidth = Math.max(10, width - pad.left - pad.right);
     const plotHeight = Math.max(10, height - pad.top - pad.bottom);
-    const step = niceStep((seriesMax > 0 ? seriesMax : 1) / 4);
-    const yMax = step * 4;
-    return { pad, plotWidth, plotHeight, yMax };
+    const ticks = 5;
+    const step = niceStep((seriesMax > 0 ? seriesMax : 1) / ticks);
+    const yMax = step * ticks;
+    return { pad, plotWidth, plotHeight, yMax, ticks };
   }
 
   function drawGrid(ctx, frame) {
-    const { pad, plotWidth, plotHeight, yMax } = frame;
+    const { pad, plotWidth, plotHeight, yMax, ticks } = frame;
     ctx.save();
     ctx.strokeStyle = COLORS.grid;
     ctx.lineWidth = 1;
@@ -85,8 +82,8 @@
     ctx.textBaseline = "middle";
     ctx.font = '11px "Segoe UI", system-ui, sans-serif';
 
-    for (let i = 0; i <= 4; i += 1) {
-      const value = (yMax / 4) * i;
+    for (let i = 0; i <= ticks; i += 1) {
+      const value = (yMax / ticks) * i;
       const y = pad.top + plotHeight - (value / yMax) * plotHeight;
       ctx.beginPath();
       ctx.moveTo(pad.left, Math.round(y) + 0.5);
@@ -131,17 +128,19 @@
     const { pad, plotWidth, plotHeight, yMax } = frame;
     const count = rows.length;
     const xFor = (year) => pad.left + (plotWidth * (year - 0.3)) / (count + 0.4);
-    const phaseEnd = Math.min(state.depositYears, result.years);
+    const phaseEnd = state.plan === "lump" ? 0 : Math.min(state.depositYears, result.years);
 
     // tło faz
     ctx.save();
-    ctx.fillStyle = COLORS.depositBg;
-    ctx.fillRect(
-      xFor(0.5),
-      pad.top,
-      Math.max(0, xFor(phaseEnd + 0.5) - xFor(0.5)),
-      plotHeight
-    );
+    if (phaseEnd > 0) {
+      ctx.fillStyle = COLORS.depositBg;
+      ctx.fillRect(
+        xFor(0.5),
+        pad.top,
+        Math.max(0, xFor(phaseEnd + 0.5) - xFor(0.5)),
+        plotHeight
+      );
+    }
     ctx.fillStyle = COLORS.maturityBg;
     ctx.fillRect(
       xFor(phaseEnd + 0.5),
@@ -183,7 +182,8 @@
 
     const maxValue = Math.max(
       0,
-      ...rows.map((r) => Math.max(r.net, r.cumulativeDeposits))
+      ...rows.map((r) => Math.max(r.net, r.cumulativeDeposits)),
+      ...state.benchmarks.flatMap((b) => b.values || [])
     );
     const frame = computeFrame(width, height, maxValue * 1.08);
     const { pad, plotWidth, plotHeight, yMax } = frame;
@@ -238,6 +238,25 @@
     ctx.stroke();
     ctx.restore();
 
+    // linie benchmarków (identyczny plan wpłat)
+    state.benchmarks.forEach((bench) => {
+      if (!bench.values || !bench.values.length) return;
+      ctx.save();
+      ctx.beginPath();
+      bench.values.forEach((value, index) => {
+        const x = xFor(index + 1);
+        const y = yFor(value);
+        if (index === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      });
+      ctx.strokeStyle = bench.color;
+      ctx.lineWidth = 1.9;
+      ctx.lineJoin = "round";
+      ctx.setLineDash([]);
+      ctx.stroke();
+      ctx.restore();
+    });
+
     // linia wartości netto
     ctx.save();
     ctx.beginPath();
@@ -266,9 +285,11 @@
     drawXLabels(ctx, frame, rows.map((r) => r.year), xFor);
   }
 
-  function render(result, depositYears) {
+  function render(result, depositYears, options = {}) {
     state.result = result;
     state.depositYears = depositYears;
+    state.benchmarks = options.benchmarks || [];
+    state.plan = options.plan || "monthly";
     redraw();
   }
 

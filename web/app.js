@@ -8,6 +8,7 @@
     MARGIN_SCENARIOS,
     INFLATION_SCENARIOS,
     calculate,
+    benchmarkSeries,
   } = window.Bonds;
 
   const PROFILE_LABELS = {
@@ -31,7 +32,11 @@
     profileShort: document.getElementById("profile-short"),
     profileInfo: document.getElementById("profile-info"),
     deposit: document.getElementById("deposit"),
+    depositField: document.getElementById("deposit-field"),
     years: document.getElementById("years"),
+    yearsField: document.getElementById("years-field"),
+    lump: document.getElementById("lump"),
+    lumpField: document.getElementById("lump-field"),
     horizon: document.getElementById("horizon"),
     rate1: document.getElementById("rate1"),
     margin: document.getElementById("margin"),
@@ -55,16 +60,21 @@
     chartsSubtitle: document.getElementById("charts-subtitle"),
     legendPhase: document.getElementById("legend-phase"),
     legendWealth: document.getElementById("legend-wealth"),
+    benchSp500: document.getElementById("bench-sp500"),
+    benchWig20: document.getElementById("bench-wig20"),
+    benchTax: document.getElementById("bench-tax"),
     tabs: Array.from(document.querySelectorAll(".tab")),
     panels: {
       calc: document.getElementById("panel-calc"),
       charts: document.getElementById("panel-charts"),
     },
-    modeButtons: Array.from(document.querySelectorAll(".segmented button")),
+    planButtons: Array.from(document.querySelectorAll("#plan-switch button")),
+    modeButtons: Array.from(document.querySelectorAll("#payout-switch button")),
   };
 
   const state = {
     mode: "payout",
+    plan: "monthly",
     last: null,
     silentTimer: 0,
   };
@@ -263,8 +273,6 @@
   function readInputs() {
     const code = currentCode();
     const profile = PROFILES[code];
-    const deposit = parseNumber(el.deposit.value);
-    const yearsRaw = parseNumber(el.years.value);
     const horizonRaw = parseNumber(el.horizon.value);
 
     const rate1 = el.rate1.disabled ? profile.defaultRate1 : parseNumber(el.rate1.value);
@@ -272,20 +280,39 @@
     const inflation = el.inflation.disabled ? 3.0 : parseNumber(el.inflation.value);
     const nbp = el.nbp.disabled ? 5.75 : parseNumber(el.nbp.value);
 
-    if (!Number.isFinite(deposit)) return { error: "Wpisz poprawną miesięczną dopłatę." };
-    if (deposit < 100) {
-      return { error: "Miesięczna dopłata musi wynosić co najmniej 100 zł (1 obligacja)." };
+    if (!Number.isFinite(horizonRaw)) {
+      return { error: "Wpisz poprawny horyzont inwestycji." };
     }
-    if (deposit > 10000000) return { error: "Miesięczna dopłata jest zbyt duża." };
-
-    if (!Number.isFinite(yearsRaw)) return { error: "Wpisz poprawną liczbę lat dopłat." };
-    if (!Number.isFinite(horizonRaw)) return { error: "Wpisz poprawny horyzont inwestycji." };
-
-    const years = Math.round(yearsRaw);
     const horizon = Math.round(horizonRaw);
-    if (years < 1 || years > 60) return { error: "Liczba lat dopłat musi być w zakresie 1–60." };
     if (horizon < 1 || horizon > 60) {
       return { error: "Horyzont inwestycji musi być w zakresie 1–60 lat." };
+    }
+
+    let deposit = 0;
+    let years = 0;
+    let amount = 0;
+
+    if (state.plan === "lump") {
+      amount = parseNumber(el.lump.value);
+      if (!Number.isFinite(amount)) return { error: "Wpisz poprawną wpłatę jednorazową." };
+      if (amount < 100) {
+        return { error: "Wpłata jednorazowa musi wynosić co najmniej 100 zł (1 obligacja)." };
+      }
+      if (amount > 10000000) return { error: "Wpłata jednorazowa jest zbyt duża." };
+    } else {
+      deposit = parseNumber(el.deposit.value);
+      if (!Number.isFinite(deposit)) return { error: "Wpisz poprawną miesięczną dopłatę." };
+      if (deposit < 100) {
+        return { error: "Miesięczna dopłata musi wynosić co najmniej 100 zł (1 obligacja)." };
+      }
+      if (deposit > 10000000) return { error: "Miesięczna dopłata jest zbyt duża." };
+
+      const yearsRaw = parseNumber(el.years.value);
+      if (!Number.isFinite(yearsRaw)) return { error: "Wpisz poprawną liczbę lat dopłat." };
+      years = Math.round(yearsRaw);
+      if (years < 1 || years > 60) {
+        return { error: "Liczba lat dopłat musi być w zakresie 1–60." };
+      }
     }
 
     const inRange = (value) => Number.isFinite(value) && value >= -20 && value <= 100;
@@ -296,8 +323,10 @@
 
     return {
       code,
+      plan: state.plan,
       deposit,
       years,
+      amount,
       horizon,
       rate1,
       margin,
@@ -337,6 +366,32 @@
     el.tileIrr.textContent = fmtPercent(result.irr * 100);
   }
 
+  function buildBenchmarks(inputs, result) {
+    const tax = el.benchTax.checked;
+    const plan = {
+      mode: inputs.plan,
+      monthlyDeposit: inputs.deposit,
+      depositMonths: Math.min(inputs.years * 12, inputs.horizon * 12),
+      amount: inputs.amount,
+    };
+    return [
+      {
+        key: "sp500",
+        rate: 10.2,
+        color: "#c2410c",
+        visible: el.benchSp500.checked,
+        values: benchmarkSeries(10.2, result.months, plan, tax),
+      },
+      {
+        key: "wig20",
+        rate: 7.5,
+        color: "#7c3aed",
+        visible: el.benchWig20.checked,
+        values: benchmarkSeries(7.5, result.months, plan, tax),
+      },
+    ];
+  }
+
   function render(result, inputs) {
     renderTiles(result);
     renderTable(result);
@@ -344,21 +399,46 @@
     const modeText = result.reinvest
       ? "wykupy reinwestowane"
       : "wykupy wypłacane na konto";
+    const planText =
+      inputs.plan === "lump"
+        ? "wpłata jednorazowa " + fmtMoney(inputs.amount, 0)
+        : "dopłaty " + fmtMoney(inputs.deposit, 0) + "/mies. przez " + inputs.years + " lat";
     el.chartsSubtitle.textContent =
       result.years +
       " lat, " +
+      planText +
+      ", " +
       modeText +
       "; słupki to transze zapadające w danym roku, druga linia pokazuje wartość netto portfela.";
 
-    const phaseEnd = Math.min(inputs.years, result.years);
-    el.legendPhase.textContent =
-      phaseEnd > 0 ? "Faza wpłat (1–" + phaseEnd + ")" : "Faza wpłat";
+    if (inputs.plan === "lump") {
+      el.legendPhase.textContent = "Wpłata jednorazowa";
+    } else {
+      const phaseEnd = Math.min(inputs.years, result.years);
+      el.legendPhase.textContent =
+        phaseEnd > 0 ? "Faza wpłat (1–" + phaseEnd + ")" : "Faza wpłat";
+    }
     el.legendWealth.textContent = result.reinvest
       ? "Wartość netto portfela"
       : "Majątek netto (portfel + wypłaty)";
 
-    state.last = { result, code: inputs.code, ike: inputs.ike };
-    window.BondCharts.render(result, inputs.years);
+    const benchmarks = buildBenchmarks(inputs, result);
+    state.last = { result, code: inputs.code, ike: inputs.ike, inputs, benchmarks };
+    window.BondCharts.render(result, inputs.plan === "lump" ? 0 : inputs.years, {
+      benchmarks: benchmarks.filter((b) => b.visible),
+      plan: inputs.plan,
+    });
+  }
+
+  function refreshBenchmarks() {
+    if (!state.last) return;
+    const { result, inputs } = state.last;
+    const benchmarks = buildBenchmarks(inputs, result);
+    state.last.benchmarks = benchmarks;
+    window.BondCharts.render(result, inputs.plan === "lump" ? 0 : inputs.years, {
+      benchmarks: benchmarks.filter((b) => b.visible),
+      plan: inputs.plan,
+    });
   }
 
   function calculateAndRender(explicit) {
@@ -380,7 +460,8 @@
         inputs.inflation,
         inputs.nbp,
         inputs.ike,
-        inputs.reinvest
+        inputs.reinvest,
+        { mode: inputs.plan, amount: inputs.amount }
       );
     } catch (err) {
       if (explicit) showAlert("Błąd obliczeń: " + err.message);
@@ -403,10 +484,16 @@
       showAlert("Najpierw wykonaj obliczenia.");
       return;
     }
-    const { result, code, ike } = state.last;
+    const { result, code, ike, inputs } = state.last;
     const lines = [];
     lines.push(
       ["Kalkulator obligacji - " + code, ike ? "IKE" : "podatek Belki 19%"].join(";")
+    );
+    lines.push(
+      [
+        "Tryb wpłat",
+        inputs && inputs.plan === "lump" ? "Wpłata jednorazowa" : "Dopłaty comiesięczne",
+      ].join(";")
     );
     lines.push(
       [
@@ -478,6 +565,24 @@
     });
   }
 
+  function setPlan(plan) {
+    state.plan = plan === "lump" ? "lump" : "monthly";
+    const isLump = state.plan === "lump";
+
+    el.planButtons.forEach((button) => {
+      const active = button.dataset.plan === state.plan;
+      button.classList.toggle("is-active", active);
+      button.setAttribute("aria-pressed", active ? "true" : "false");
+    });
+
+    el.depositField.hidden = isLump;
+    el.deposit.disabled = isLump;
+    el.years.disabled = isLump;
+    el.yearsField.title = isLump ? "Nie dotyczy wpłaty jednorazowej" : "";
+    el.lumpField.hidden = !isLump;
+    el.lump.disabled = !isLump;
+  }
+
   /* ------------------------------------------------------------- start */
   function populateProfiles() {
     DEFAULT_ORDER.forEach((code) => {
@@ -515,18 +620,29 @@
       input.addEventListener("change", () => calculateAndRender(true));
     });
 
-    [el.deposit, el.years, el.horizon, el.rate1, el.nbp].forEach((input) => {
+    [el.deposit, el.years, el.horizon, el.lump, el.rate1, el.nbp].forEach((input) => {
       input.addEventListener("input", scheduleSilentCalculate);
       input.addEventListener("change", () => calculateAndRender(true));
     });
 
     el.ike.addEventListener("change", () => calculateAndRender(true));
 
+    el.planButtons.forEach((button) => {
+      button.addEventListener("click", () => {
+        setPlan(button.dataset.plan);
+        calculateAndRender(true);
+      });
+    });
+
     el.modeButtons.forEach((button) => {
       button.addEventListener("click", () => {
         setMode(button.dataset.mode);
         calculateAndRender(true);
       });
+    });
+
+    [el.benchSp500, el.benchWig20, el.benchTax].forEach((box) => {
+      box.addEventListener("change", refreshBenchmarks);
     });
 
     el.exportButton.addEventListener("click", exportCsv);
@@ -548,6 +664,7 @@
 
   populateProfiles();
   setMode("payout");
+  setPlan("monthly");
   applyProfile("EDO", { silent: true });
   el.profile.value = "EDO";
   wireEvents();

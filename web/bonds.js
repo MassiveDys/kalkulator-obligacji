@@ -171,15 +171,20 @@
     inflation,
     nbpRate,
     ike,
-    reinvest = true
+    reinvest = true,
+    options = {}
   ) {
     const profile = PROFILES[code];
     if (!profile) throw new Error("Nieznany rodzaj obligacji: " + code);
 
+    const mode = options && options.mode === "lump" ? "lump" : "monthly";
+    const lumpAmount =
+      mode === "lump" ? Math.max(0, Number(options.amount) || 0) : 0;
+
     depositYears = Math.max(0, Math.trunc(depositYears));
     horizonYears = Math.max(1, Math.trunc(horizonYears));
     const months = horizonYears * 12;
-    const depositMonths = Math.min(depositYears * 12, months);
+    const depositMonths = mode === "lump" ? 0 : Math.min(depositYears * 12, months);
 
     let laterRate;
     if (profile.kind === "inflacja") {
@@ -241,8 +246,18 @@
       lot.coupon = 0.0;
     }
 
+    if (mode === "lump") {
+      cash += lumpAmount;
+      totalDeposits += lumpAmount;
+      annualDeposits += lumpAmount;
+      flows.push([0, -lumpAmount]);
+      const [cashAfterBuy, boughtLump] = buy(0, cash);
+      cash = cashAfterBuy;
+      bondsBought += boughtLump;
+    }
+
     for (let month = 1; month <= months; month += 1) {
-      if (month <= depositMonths) {
+      if (mode === "monthly" && month <= depositMonths) {
         cash += monthlyDeposit;
         totalDeposits += monthlyDeposit;
         annualDeposits += monthlyDeposit;
@@ -344,8 +359,41 @@
       months,
       paidOut,
       reinvest,
+      paymentMode: mode,
+      lumpAmount,
       rows,
     };
+  }
+
+  /*
+   * Wartość identycznego planu wpłat przy stałej rocznej stopie zwrotu.
+   * Plan: { mode: "monthly"|"lump", monthlyDeposit, depositMonths, amount }.
+   * Zwraca wartość na koniec każdego roku (po podatku Belki, jeśli tax=true).
+   */
+  function benchmarkSeries(annualPercent, months, plan, tax = false) {
+    const growth = 1.0 + monthlyRate(annualPercent);
+    let value = 0.0;
+    let contributed = 0.0;
+    const values = [];
+    const mode = plan.mode === "lump" ? "lump" : "monthly";
+
+    if (mode === "lump") {
+      value = Math.max(0, Number(plan.amount) || 0);
+      contributed = value;
+    }
+
+    for (let month = 1; month <= months; month += 1) {
+      if (mode === "monthly" && month <= plan.depositMonths) {
+        value += plan.monthlyDeposit;
+        contributed += plan.monthlyDeposit;
+      }
+      value *= growth;
+      if (month % 12 === 0) {
+        const gain = Math.max(0.0, value - contributed);
+        values.push(tax ? value - gain * BELKA : value);
+      }
+    }
+    return values;
   }
 
   return {
@@ -359,5 +407,6 @@
     monthlyRate,
     xirrMonthly,
     calculate,
+    benchmarkSeries,
   };
 });

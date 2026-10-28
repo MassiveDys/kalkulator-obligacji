@@ -1,5 +1,12 @@
 # CHANGELOG — kalkulator-obligacji
 
+## [1.4.0] — 2026-10-28
+- Dodano tryb „Wpłata jednorazowa”: kwota początkowa (np. 10 000 zł) i horyzont, zakup obligacji w miesiącu 0; pola dopłat miesięcznych ukrywane, lata dopłat nieaktywne.
+- Dodano benchmarki na wykresie wartości: S&P 500 (~10,2% rocznie) i WIG20 (~7,5% rocznie) przy identycznym planie wpłat.
+- Dodano przełączniki widoczności benchmarków oraz opcję podatku Belki 19% od ich zysku.
+- Dodano linię „Tryb wpłat” w eksporcie CSV i aktualizację opisów/legend.
+- Zaktualizowano dokumentację i opublikowano zmiany na GitHub Pages.
+
 ## [1.3.0] — 2026-10-28
 - Dodano wersję web (`web/`) w czystym HTML/CSS/JS: pełny port silnika `bonds.py`, 8 typów obligacji, scenariusze marży i inflacji, IKE, tryby wykupów, kafelki, tabela i eksport CSV.
 - Dodano wykresy canvas bez zależności: drabina zapadalności oraz wartość oszczędności na tle wpłat.

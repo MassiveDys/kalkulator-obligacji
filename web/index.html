@@ -4,11 +4,11 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#eef2f7">
-  <meta name="description" content="Kalkulator polskich obligacji skarbowych: EDO, COI, TOS, DOR, ROR, OTS, ROS, ROD. Dopłaty miesięczne, podatek Belki lub IKE, drabina zapadalności i wykresy.">
+  <meta name="description" content="Kalkulator polskich obligacji skarbowych: EDO, COI, TOS, DOR, ROR, OTS, ROS, ROD. Dopłaty miesięczne lub wpłata jednorazowa, podatek Belki / IKE, porównanie z S&P 500 i WIG20.">
   <meta property="og:type" content="website">
   <meta property="og:locale" content="pl_PL">
   <meta property="og:title" content="Kalkulator obligacji skarbowych">
-  <meta property="og:description" content="Policz zysk z EDO, COI, TOS, DOR, ROR, OTS, ROS i ROD: dopłaty miesięczne, podatek Belki lub IKE, tabela rok po roku i wykresy.">
+  <meta property="og:description" content="Policz zysk z obligacji skarbowych: dopłaty miesięczne lub jedna wpłata, podatek Belki / IKE, tabela rok po roku i porównanie z S&P 500 oraz WIG20.">
   <meta name="twitter:card" content="summary">
   <title>Kalkulator obligacji skarbowych</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%231f4e79'/%3E%3Cpath d='M8 22V14M14 22V10M20 22V16M26 22V8' stroke='%23a6e3a1' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E">
@@ -19,7 +19,7 @@
     <header class="masthead">
       <div class="masthead-text">
         <h1>Kalkulator obligacji skarbowych</h1>
-        <p>Stałe miesięczne dopłaty &bull; wybór rodzaju obligacji &bull; podatek Belki / IKE &bull; wykresy</p>
+        <p>Dopłaty miesięczne lub wpłata jednorazowa &bull; podatek Belki / IKE &bull; porównanie z S&amp;P 500 i WIG20</p>
       </div>
     </header>
 
@@ -31,6 +31,14 @@
     <main>
       <section class="panel" id="panel-calc" role="tabpanel" aria-labelledby="tab-calc">
         <form class="card controls" id="form" novalidate>
+          <div class="plan-bar">
+            <span class="plan-label">Tryb wpłat</span>
+            <div class="segmented" id="plan-switch" role="group" aria-label="Tryb wpłat">
+              <button type="button" data-plan="monthly" aria-pressed="true" class="is-active">Dopłaty comiesięczne</button>
+              <button type="button" data-plan="lump" aria-pressed="false">Wpłata jednorazowa</button>
+            </div>
+          </div>
+
           <div class="grid">
             <div class="field field-profile">
               <label for="profile">Rodzaj obligacji</label>
@@ -38,12 +46,18 @@
               <p class="field-hint" id="profile-short"></p>
             </div>
 
-            <div class="field">
+            <div class="field" id="deposit-field">
               <label for="deposit">Miesięczna dopłata (zł)</label>
               <input id="deposit" name="deposit" type="text" inputmode="decimal" autocomplete="off" value="400">
             </div>
 
-            <div class="field">
+            <div class="field" id="lump-field" hidden>
+              <label for="lump">Wpłata jednorazowa (zł)</label>
+              <input id="lump" name="lump" type="text" inputmode="decimal" autocomplete="off" value="10000">
+              <p class="field-hint">Kupowane są pełne obligacje po 100 zł; reszta zostaje w gotówce.</p>
+            </div>
+
+            <div class="field" id="years-field">
               <label for="years">Liczba lat dopłat</label>
               <input id="years" name="years" type="text" inputmode="numeric" autocomplete="off" value="10">
             </div>
@@ -84,7 +98,7 @@
               <span>Konto IKE (bez podatku Belki)</span>
             </label>
 
-            <div class="segmented" role="group" aria-label="Tryb po zapadnięciu">
+            <div class="segmented" id="payout-switch" role="group" aria-label="Tryb po zapadnięciu">
               <button type="button" data-mode="reinvest" aria-pressed="false">Reinwestuj wykupy</button>
               <button type="button" data-mode="payout" aria-pressed="true" class="is-active">Wypłacaj na konto</button>
             </div>
@@ -153,8 +167,10 @@
         </section>
 
         <p class="footnote">
-          Założenia: 1 obligacja = 100 zł; wykupy reinwestowane lub wypłacane; stopy roczne przeliczone
-          miesięcznie; podatek Belki 19% (IKE 0%). Wyniki są szacunkowe.
+          Założenia: 1 obligacja = 100 zł; wpłaty miesięczne lub jednorazowe; wykupy reinwestowane
+          lub wypłacane; stopy roczne przeliczone miesięcznie; podatek Belki 19% (IKE 0%).
+          Benchmarki to stałe średnie stopy (S&amp;P 500 ~10,2%, WIG20 ~7,5% rocznie) — bez kosztów
+          i inflacji. Wyniki są szacunkowe.
         </p>
       </section>
 
@@ -187,8 +203,28 @@
               <span class="legend-item"><i class="swatch swatch-capital"></i>Wpłacony kapitał</span>
               <span class="legend-item"><i class="swatch swatch-profit"></i>Zysk netto</span>
             </div>
+            <div class="legend bench-legend">
+              <label class="legend-item legend-check">
+                <input type="checkbox" id="bench-sp500" checked>
+                <i class="swatch swatch-sp"></i>
+                <span>S&amp;P 500 (~10,2% śr. 30 lat)</span>
+              </label>
+              <label class="legend-item legend-check">
+                <input type="checkbox" id="bench-wig20" checked>
+                <i class="swatch swatch-wig"></i>
+                <span>WIG20 (~7,5% śr. 30 lat)</span>
+              </label>
+              <label class="legend-item legend-check">
+                <input type="checkbox" id="bench-tax" checked>
+                <span>podatek Belki 19% w benchmarkach</span>
+              </label>
+            </div>
+            <p class="bench-note">
+              Identyczny plan wpłat, stała roczna stopa zwrotu, zyski reinwestowane, bez kosztów
+              i inflacji. To punkt odniesienia, nie prognoza.
+            </p>
             <div class="canvas-wrap">
-              <canvas id="chart-wealth" height="280" aria-label="Wykres liniowy: wartość netto oszczędności i wpłacony kapitał w czasie"></canvas>
+              <canvas id="chart-wealth" height="280" aria-label="Wykres liniowy: wartość netto obligacji, wpłacony kapitał oraz porównanie z S&P 500 i WIG20"></canvas>
             </div>
           </figure>
         </div>

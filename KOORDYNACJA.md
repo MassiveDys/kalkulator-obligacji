@@ -62,3 +62,20 @@ Wzorowana na załączonym zrzucie ekranu (nowoczesny interfejs GUI).
   - Zwrócenie działającego publicznego linku URL do strony.
 
 - **Status v1.3 [Coderweb]**: Gotowe - wersja web wdrożona i publiczna: https://massivedys.github.io/kalkulator-obligacji/ (repo: https://github.com/MassiveDys/kalkulator-obligacji)
+
+- **Status Web [Coderweb]**: Gotowe — opublikowano na GitHub Pages pod adresem: https://massivedys.github.io/kalkulator-obligacji/ (20/20 testów przeglądarkowych PASS).
+
+
+## Zadanie: Wersja Web — Wpłata jednorazowa + Porównanie z S&P 500 / WIG20
+- **Wymagania użytkownika**:
+  1. Opcja wpłaty jednorazowej (lump sum), np. 10 000 zł i horyzont np. 10 lat (obok dotychczasowych dopłat comiesięcznych).
+  2. Dodanie na wykresach adekwatnego porównania z identyczną inwestycją w indeksy akcyjne:
+     - S&P 500 (historyczna średnia ~10% rocznie dla Total Return z ostatnich 30 lat)
+     - WIG20 / WIG (historyczna średnia ~7-8% rocznie z ostatnich 30 lat / od początku indeksu)
+     - Wizualizacja porównawcza wartości portfela w czasie (obligacje vs S&P 500 vs WIG).
+  3. Realizacja i publikacja wyłącznie wersji Web (brak konieczności przebudowy EXE).
+- **Zadanie [Coderweb]**:
+  - Aktualizacja logiki w web/bonds.js, interfejsu w web/index.html i web/app.js, oraz wykresów w web/charts.js.
+  - Wdrożenie zmian na repozytorium GitHub i aktualizacja GitHub Pages.
+
+- **Status v1.4 [Coderweb]**: Gotowe - wpłata jednorazowa i benchmarki S&P 500 / WIG20 wdrożone, opublikowane: https://massivedys.github.io/kalkulator-obligacji/
