@@ -19,6 +19,7 @@ https://massivedys.github.io/kalkulator-obligacji/
 - 12 scenariuszy silnika miesięcznego porównanych z Pythonem (`bonds.py`): identyczne (różnice < 1e-5)
 - benchmarki sprawdzone wzorami analitycznymi (renta miesięczna, procent składany, podatek)
 - przeglądarka lokalna: 31/31 asercji (8 profili, wpłata jednorazowa, IKE, reinwestycja, walidacja, CSV, benchmarki i ich ukrywanie, podatek), 0 błędów konsoli
+- wersja publiczna: 15/15 asercji (tryb jednorazowy, benchmarki, przełączniki, CSV), 0 błędów konsoli, zasoby 200
 - szerokości 320, 390 i 1440 px — bez poziomego przewijania
 
 ## Co działa (desktop)
