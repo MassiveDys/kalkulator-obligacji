@@ -1,5 +1,5 @@
 /* Service worker: offline dla kalkulatora (cache-first dla plików, sieć dla nawigacji). */
-const CACHE = "kalkulator-obligacji-v4";
+const CACHE = "kalkulator-obligacji-v5";
 const ASSETS = [
   "./",
   "./index.html",
@@ -8,6 +8,7 @@ const ASSETS = [
   "./bonds.js",
   "./charts.js",
   "./app.js",
+  "./ranking.js",
   "./compare.js",
   "./portfolio.js",
   "./rentier.js",

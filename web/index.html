@@ -4,11 +4,11 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#eef2f7">
-  <meta name="description" content="Kalkulator polskich obligacji skarbowych: EDO, COI, TOS, DOR, ROR, OTS, ROS, ROD. Portfel i drabina obligacyjna, porównanie wariantów, tryb rentierski, podatek Belki / IKE, wartości po inflacji.">
+  <meta name="description" content="Kalkulator polskich obligacji skarbowych: EDO, COI, TOS, DOR, ROR, OTS, ROS, ROD. Ranking „co wybrać” dla jednej wpłaty, portfel i drabina, porównanie A/B, tryb rentierski, podatek Belki / IKE, wartości po inflacji.">
   <meta property="og:type" content="website">
   <meta property="og:locale" content="pl_PL">
   <meta property="og:title" content="Kalkulator obligacji skarbowych">
-  <meta property="og:description" content="Policz zysk z obligacji, zbuduj portfel, porównaj dwa warianty i sprawdź, na ile lat wystarczy kapitał przy stałej wypłacie.">
+  <meta property="og:description" content="Sprawdź, która obligacja wyjdzie najlepiej dla jednej wpłaty i wybranego okresu. Portfel, porównanie wariantów i tryb rentierski.">
   <meta name="twitter:card" content="summary">
   <title>Kalkulator obligacji skarbowych</title>
   <link rel="icon" href="icon.svg" type="image/svg+xml">
@@ -20,7 +20,7 @@
     <header class="masthead">
       <div class="masthead-text">
         <h1>Kalkulator obligacji skarbowych</h1>
-        <p>Portfel i drabina &bull; porównanie A/B &bull; tryb rentierski &bull; podatek Belki / IKE &bull; wartości po inflacji</p>
+        <p>Ranking „co wybrać” &bull; portfel i drabina &bull; porównanie A/B &bull; tryb rentierski &bull; podatek Belki / IKE</p>
       </div>
       <div class="masthead-actions">
         <button type="button" class="ghost" id="share-button">
@@ -33,6 +33,7 @@
 
     <div class="tabs" role="tablist" aria-label="Widok">
       <button type="button" class="tab is-active" id="tab-calc" role="tab" aria-selected="true" aria-controls="panel-calc" data-tab="calc">Obliczenia</button>
+      <button type="button" class="tab" id="tab-ranking" role="tab" aria-selected="false" aria-controls="panel-ranking" data-tab="ranking" tabindex="-1">Ranking</button>
       <button type="button" class="tab" id="tab-compare" role="tab" aria-selected="false" aria-controls="panel-compare" data-tab="compare" tabindex="-1">Porównanie</button>
       <button type="button" class="tab" id="tab-portfolio" role="tab" aria-selected="false" aria-controls="panel-portfolio" data-tab="portfolio" tabindex="-1">Portfel</button>
       <button type="button" class="tab" id="tab-rentier" role="tab" aria-selected="false" aria-controls="panel-rentier" data-tab="rentier" tabindex="-1">Rentier</button>
@@ -214,6 +215,133 @@
           dyskontowane osobno). Benchmarki to stałe średnie stopy (S&amp;P 500 ~10,2%, WIG20 ~7,5%
           rocznie) — bez kosztów i inflacji. Wyniki są szacunkowe.
         </p>
+      </section>
+
+      <!-- ---------------------------------------------------------- ranking -->
+      <section class="panel" id="panel-ranking" role="tabpanel" aria-labelledby="tab-ranking" hidden>
+        <div class="card controls">
+          <div class="card-head">
+            <div>
+              <h2>Co wybrać? Ranking obligacji</h2>
+              <p class="subtitle">Jednorazowa wpłata i wybrany okres — porównanie wszystkich serii z podatkiem, opłatami i reinwestycją. Ranking odpowiada na pytanie: co da najwięcej na koniec.</p>
+            </div>
+          </div>
+
+          <div class="grid">
+            <div class="field">
+              <label for="rk-amount">Kwota wpłaty (zł)</label>
+              <input id="rk-amount" type="text" inputmode="decimal" value="100000">
+            </div>
+            <div class="field">
+              <label for="rk-years">Okres — lata</label>
+              <input id="rk-years" type="text" inputmode="numeric" value="2">
+            </div>
+            <div class="field">
+              <label for="rk-months">Okres — miesiące</label>
+              <input id="rk-months" type="text" inputmode="numeric" value="0">
+              <p class="field-hint">0–11; np. 1 rok i 6 miesięcy = 1 + 6.</p>
+            </div>
+            <div class="field">
+              <label for="rk-inflation">Inflacja (%)</label>
+              <input id="rk-inflation" type="text" inputmode="decimal" value="3,00">
+            </div>
+            <div class="field">
+              <label for="rk-nbp">Stopa NBP (%)</label>
+              <input id="rk-nbp" type="text" inputmode="decimal" value="5,75">
+            </div>
+          </div>
+
+          <div class="quick-row">
+            <span class="plan-label">Szybki okres</span>
+            <button type="button" class="chip rk-quick" data-months="6">6 mies.</button>
+            <button type="button" class="chip rk-quick" data-months="12">1 rok</button>
+            <button type="button" class="chip rk-quick" data-months="24">2 lata</button>
+            <button type="button" class="chip rk-quick" data-months="36">3 lata</button>
+            <button type="button" class="chip rk-quick" data-months="60">5 lat</button>
+          </div>
+
+          <div class="actions">
+            <label class="check">
+              <input type="checkbox" id="rk-ike">
+              <span>Konto IKE (0% podatku)</span>
+            </label>
+            <label class="check">
+              <input type="checkbox" id="rk-family">
+              <span>Uwzględnij rodzinne (ROS/ROD)</span>
+            </label>
+            <button type="button" class="primary" id="rk-calc">Policz ranking</button>
+          </div>
+        </div>
+
+        <div class="alert" id="rk-alert" role="alert" hidden></div>
+
+        <section class="card winner" id="rk-winner" aria-label="Rekomendacja" hidden>
+          <div class="winner-head">
+            <span class="winner-badge">Rekomendacja</span>
+            <span class="winner-mode" id="rk-winner-mode"></span>
+          </div>
+          <div class="winner-body">
+            <div class="winner-title">
+              <div class="winner-name" id="rk-winner-name">&mdash;</div>
+              <div class="winner-label">Najwyższa wartość netto na koniec okresu</div>
+            </div>
+            <div class="winner-stats">
+              <div class="winner-stat">
+                <span class="winner-value" id="rk-winner-net">&mdash;</span>
+                <span class="winner-stat-label">Wartość netto</span>
+              </div>
+              <div class="winner-stat">
+                <span class="winner-value tile-green" id="rk-winner-profit">&mdash;</span>
+                <span class="winner-stat-label">Zysk netto</span>
+              </div>
+              <div class="winner-stat">
+                <span class="winner-value tile-green" id="rk-winner-rate">&mdash;</span>
+                <span class="winner-stat-label">Rocznie</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="card table-card" aria-labelledby="rk-table-title">
+          <div class="card-head">
+            <h2 id="rk-table-title">Ranking serii</h2>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th scope="col" class="col-rank">#</th>
+                  <th scope="col" class="col-series">Seria</th>
+                  <th scope="col">Wartość netto</th>
+                  <th scope="col">Zysk netto</th>
+                  <th scope="col">Stopa roczna</th>
+                  <th scope="col" class="col-mode">Tryb</th>
+                  <th scope="col">Podatek</th>
+                </tr>
+              </thead>
+              <tbody id="rk-rows"></tbody>
+            </table>
+          </div>
+          <p class="real-note" id="rk-subtitle"></p>
+          <p class="table-hint">Na telefonie przewiń tabelę w bok, aby zobaczyć tryb i podatek.</p>
+        </section>
+
+        <section class="card charts-card">
+          <div class="card-head">
+            <div>
+              <h2>Zysk netto według serii</h2>
+              <p class="subtitle">Zielony słupek to zwycięzca; im dłuższy, tym więcej zostaje na koniec okresu.</p>
+            </div>
+          </div>
+          <div class="canvas-wrap canvas-tall">
+            <canvas id="chart-ranking" height="340" aria-label="Wykres słupkowy poziomy: zysk netto każdej serii obligacji"></canvas>
+          </div>
+        </section>
+
+        <section class="card analysis" aria-labelledby="rk-analysis-title">
+          <h2 id="rk-analysis-title">Co to oznacza?</h2>
+          <p id="rk-summary"></p>
+        </section>
       </section>
 
       <!-- ------------------------------------------------------- porównanie -->
@@ -635,6 +763,7 @@
   <script src="bonds.js"></script>
   <script src="charts.js"></script>
   <script src="app.js"></script>
+  <script src="ranking.js"></script>
   <script src="compare.js"></script>
   <script src="portfolio.js"></script>
   <script src="rentier.js"></script>

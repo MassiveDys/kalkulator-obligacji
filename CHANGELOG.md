@@ -1,5 +1,14 @@
 # CHANGELOG — kalkulator-obligacji
 
+## [1.7.0] — 2026-10-28
+- Dodano zakładkę **Ranking / „Co wybrać?”**: jedna wpłata, wybrany okres (lata + miesiące) i porównanie wszystkich serii obligacji.
+- Ranking uwzględnia wykup naturalny, wcześniejszy wykup z oficjalną opłatą (podatek Belki po prowizji) oraz rolowanie kapitału i kuponów w tę samą serię; końcówka bez pełnego cyklu zostaje w gotówce.
+- Dodano kartę rekomendacji (zwycięzca), tabelę rankingową (wartość netto, zysk, stopa roczna, tryb, opłata, podatek), poziomy wykres zysku netto i krótkie wnioski.
+- Dodano przełączniki IKE, obligacji rodzinnych ROS/ROD, pola inflacji i stopy NBP oraz szybkie okresy (6 mies., 1, 2, 3, 5 lat).
+- Nowy moduł `web/ranking.js`, funkcja `rankBonds` w `web/bonds.js` (horyzont w miesiącach, wykup końcowy), nowy typ wykresu kategorii w `charts.js`.
+- Ranking zapisuje się w permalinku URL i `localStorage` (klucz `rk`).
+- Testy: 39/39 silnika (`node tools/test-web.mjs`) i 38/38 testów DOM; publikacja na GitHub Pages.
+
 ## [1.6.0] — 2026-10-28
 - Dodano zakładkę **Porównanie A/B**: dwa niezależne warianty (typ obligacji, tryb wpłat, kwota, horyzont, IKE, wcześniejszy wykup), wspólna inflacja i stopa NBP, tabela różnic w złotych i na wykresie.
 - Dodano zakładkę **Portfel**: do 8 pozycji z różnymi seriami i datami zakupu (drabina), reinwestycja wykupów w tę samą serię, harmonogram wykupów, wartość netto, IRR, tabela roczna i dwa wykresy. Presety „drabina 4-letnia” i „czysty EDO”.

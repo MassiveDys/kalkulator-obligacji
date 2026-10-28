@@ -474,8 +474,11 @@
    */
   function simulate(config) {
     const cfg = config || {};
+    const horizonMonthsRaw = Number(cfg.horizonMonths);
     const horizonYears = Math.max(1, Math.trunc(cfg.horizonYears || 1));
-    const months = horizonYears * 12;
+    const months = Number.isFinite(horizonMonthsRaw) && horizonMonthsRaw > 0
+      ? Math.max(1, Math.round(horizonMonthsRaw))
+      : horizonYears * 12;
     const inflation = Number.isFinite(Number(cfg.inflation)) ? Number(cfg.inflation) : 3.0;
     const nbpRate = Number.isFinite(Number(cfg.nbp)) ? Number(cfg.nbp) : 5.75;
     const taxFactor = cfg.ike ? 0.0 : BELKA;
@@ -608,7 +611,8 @@
         }
 
         const mature = lot.age >= lot.termMonths;
-        if (lot.payout === "wyplata" && (lot.age % 12 === 0 || mature)) {
+        const skipCoupon = Boolean(cfg.redeemAtEnd) && month === months && !mature;
+        if (lot.payout === "wyplata" && (lot.age % 12 === 0 || mature) && !skipCoupon) {
           if (lot.coupon > 0) {
             const tax = lot.coupon * taxFactor;
             cash += lot.coupon - tax;
@@ -637,10 +641,12 @@
       }
       lots = survivors;
 
-      if (reinvest && cash >= NOMINAL) {
+      if (reinvest && cash >= NOMINAL && month < months) {
         const buffer = withdrawal > 0 ? withdrawal * 3 : 0;
-        if (cash - buffer >= NOMINAL) {
-          const code = maturedCodes[0] || primaryCode;
+        const code = maturedCodes[0] || primaryCode;
+        const profile = PROFILES[code];
+        const fits = profile && months - month >= termMonths(profile);
+        if (fits && cash - buffer >= NOMINAL) {
           const pool = cash - buffer;
           cash = buffer + buy(code, pool, month);
         }
@@ -668,7 +674,31 @@
       }
     }
 
-    const net = netValue(lots, cash, taxFactor);
+    let net = netValue(lots, cash, taxFactor);
+    let earlyFee = 0.0;
+    let earlyBonds = 0;
+    let earlyTax = 0.0;
+
+    // Wcześniejszy wykup wszystkiego, co zostało na koniec horyzontu
+    // (tak jak w kalkulatorze: opłata potrącana z odsetek, kapitał chroniony).
+    if (cfg.redeemAtEnd && lots.length) {
+      let finalCash = cash;
+      for (const lot of lots) {
+        const profile = PROFILES[lot.code];
+        let interest = lot.payout === "kapitalizacja" ? lot.gain : lot.coupon;
+        if (profile.earlyNoInterest) interest = 0.0;
+        const fee = Math.min(Number(profile.earlyFee) || 0, Math.max(0.0, interest));
+        const taxable = Math.max(0.0, interest - fee);
+        const tax = taxable * taxFactor;
+        finalCash += NOMINAL + interest - fee - tax;
+        earlyFee += fee;
+        earlyTax += tax;
+        earlyBonds += 1;
+      }
+      taxPaid += earlyTax;
+      net = finalCash;
+    }
+
     flows.push([months, net]);
     const monthlyIrr = xirrMonthly(flows);
     const irr = monthlyIrr > -1 ? Math.pow(1.0 + monthlyIrr, 12) - 1.0 : -1.0;
@@ -682,12 +712,109 @@
       bondsHeld: lots.length,
       cashLeft: cash,
       taxPaid,
+      earlyFee,
+      earlyBonds,
+      earlyTax,
+      earlyRedeemed: Boolean(cfg.redeemAtEnd && lots.length),
       irr,
       months,
       years: horizonYears,
       depletionMonth,
       depleted: depletionMonth > 0,
       rows,
+    };
+  }
+
+  /*
+   * Ranking serii dla jednej wpłaty i zadanego horyzontu w miesiącach.
+   * Dla horyzontu krótszego niż zapadalność liczy wcześniejszy wykup
+   * z opłatą; dla dłuższego — roluje kapitał w tę samą serię, a resztę
+   * niedokończonego cyklu wykupuje wcześniej (z opłatą).
+   */
+  function rankBonds(config) {
+    const cfg = config || {};
+    const amount = Math.max(0, Number(cfg.amount) || 0);
+    const years = Math.max(0, Math.trunc(cfg.years || 0));
+    const extraMonths = Math.max(0, Math.min(11, Math.trunc(cfg.months || 0)));
+    const horizonMonths = Math.max(1, Math.min(480, years * 12 + extraMonths));
+    const inflation = Number.isFinite(Number(cfg.inflation)) ? Number(cfg.inflation) : 3.0;
+    const nbp = Number.isFinite(Number(cfg.nbp)) ? Number(cfg.nbp) : 5.75;
+    const includeFamily = Boolean(cfg.includeFamily);
+
+    const order = DEFAULT_ORDER.filter(
+      (code) => includeFamily || (code !== "ROS" && code !== "ROD")
+    );
+
+    const results = order.map((code) => {
+      const profile = PROFILES[code];
+      const term = termMonths(profile);
+      const sim = simulate({
+        positions: [{ code, amount, startMonth: 0 }],
+        horizonMonths,
+        inflation,
+        nbp,
+        ike: Boolean(cfg.ike),
+        reinvest: true,
+        redeemAtEnd: true,
+      });
+
+      const cycles = Math.floor(horizonMonths / term);
+      const remainder = horizonMonths % term;
+      let modeKey;
+      let mode;
+      if (sim.earlyBonds > 0) {
+        modeKey = cycles > 0 ? "roll-early" : "early";
+        mode = cycles > 0
+          ? "reinwestycja " + cycles + " cykli + wcześniejszy wykup"
+          : "wcześniejszy wykup";
+      } else if (cycles >= 2) {
+        modeKey = "roll";
+        mode = "reinwestycja " + cycles + " cykli" + (remainder > 0 ? " + gotówka" : "");
+      } else if (cycles === 1) {
+        modeKey = "natural";
+        mode = "wykup naturalny" + (remainder > 0 ? " + gotówka" : "");
+      } else {
+        modeKey = "early";
+        mode = "wcześniejszy wykup";
+      }
+
+      const cagr = amount > 0 ? Math.pow(sim.net / amount, 12 / horizonMonths) - 1 : 0;
+
+      return {
+        code,
+        name: profile.name,
+        termMonths: term,
+        termYears: profile.termYears,
+        cycles,
+        remainder,
+        mode,
+        modeKey,
+        net: sim.net,
+        profit: sim.net - amount,
+        irr: sim.irr,
+        cagr,
+        earlyFee: sim.earlyFee,
+        earlyBonds: sim.earlyBonds,
+        taxPaid: sim.taxPaid,
+        bondsBought: sim.bondsBought,
+      };
+    });
+
+    results.sort((a, b) => b.net - a.net);
+    results.forEach((item, index) => {
+      item.rank = index + 1;
+    });
+
+    return {
+      amount,
+      months: horizonMonths,
+      years: horizonMonths / 12,
+      inflation,
+      nbp,
+      ike: Boolean(cfg.ike),
+      includeFamily,
+      results,
+      winner: results[0] || null,
     };
   }
 
@@ -724,6 +851,7 @@
     calculate,
     benchmarkSeries,
     simulate,
+    rankBonds,
     discount,
     realDeposits,
   };

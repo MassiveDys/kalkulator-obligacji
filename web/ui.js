@@ -74,7 +74,7 @@
     if (parsed && typeof parsed === "object") {
       data.v = 1;
       if (typeof parsed.tab === "string") data.tab = parsed.tab;
-      ["calc", "cmp", "pf", "rn"].forEach((key) => {
+      ["calc", "cmp", "pf", "rn", "rk"].forEach((key) => {
         if (parsed[key] && typeof parsed[key] === "object") data[key] = parsed[key];
       });
     }
@@ -101,7 +101,7 @@
 
   function writeNow() {
     const snapshot = { v: 1, tab: data.tab };
-    ["calc", "cmp", "pf", "rn"].forEach((key) => {
+    ["calc", "cmp", "pf", "rn", "rk"].forEach((key) => {
       if (data[key]) snapshot[key] = data[key];
     });
     try {

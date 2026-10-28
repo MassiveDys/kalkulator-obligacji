@@ -257,11 +257,80 @@
     drawXLabels(ctx, frame, years, xFor);
   }
 
+  /* ------------------------------------------------------- kategorie */
+  function drawCategories(canvas, cfg) {
+    const prepared = setup(canvas);
+    if (!prepared) return;
+    const { ctx, width, height } = prepared;
+    const labels = cfg.labels || [];
+    const values = (cfg.values || []).map(Number);
+    const count = values.length;
+    if (!count) return;
+
+    const pad = { left: 64, right: 84, top: 12, bottom: 30 };
+    const plotWidth = Math.max(10, width - pad.left - pad.right);
+    const plotHeight = Math.max(10, height - pad.top - pad.bottom);
+    const rawMin = Math.min(0, ...values);
+    const rawMax = Math.max(0, ...values);
+    const step = niceStep((rawMax - rawMin > 0 ? rawMax - rawMin : 100) / 5);
+    const minValue = Math.floor(rawMin / step) * step;
+    const maxValue = Math.ceil(rawMax / step) * step;
+    const span = Math.max(step, maxValue - minValue);
+    const xFor = (value) => pad.left + ((value - minValue) / span) * plotWidth;
+    const zeroX = xFor(0);
+    const rowHeight = plotHeight / count;
+
+    ctx.save();
+    ctx.strokeStyle = COLORS.grid;
+    ctx.fillStyle = COLORS.muted;
+    ctx.font = '11px "Segoe UI", system-ui, sans-serif';
+    ctx.textAlign = "center";
+    ctx.textBaseline = "top";
+    for (let value = minValue; value <= maxValue + 1e-9; value += step) {
+      const x = xFor(value);
+      ctx.beginPath();
+      ctx.setLineDash(value === 0 ? [] : [4, 4]);
+      ctx.moveTo(Math.round(x) + 0.5, pad.top);
+      ctx.lineTo(Math.round(x) + 0.5, pad.top + plotHeight);
+      ctx.stroke();
+      ctx.fillText(axisMoney(value), x, pad.top + plotHeight + 8);
+    }
+    ctx.restore();
+
+    values.forEach((value, index) => {
+      const y = pad.top + index * rowHeight + rowHeight * 0.18;
+      const barHeight = Math.max(8, rowHeight * 0.62);
+      const x = Math.min(zeroX, xFor(value));
+      const barWidth = Math.max(1, Math.abs(xFor(value) - zeroX));
+      ctx.save();
+      ctx.fillStyle = (cfg.colors && cfg.colors[index]) || COLORS.accent;
+      ctx.fillRect(x, y, barWidth, barHeight);
+
+      ctx.fillStyle = COLORS.muted;
+      ctx.font = '12px "Segoe UI", system-ui, sans-serif';
+      ctx.textAlign = "right";
+      ctx.textBaseline = "middle";
+      ctx.fillText(labels[index] || "", pad.left - 10, y + barHeight / 2);
+
+      ctx.fillStyle = COLORS.text || "#122a42";
+      ctx.textAlign = value >= 0 ? "left" : "right";
+      const valueX = value >= 0 ? xFor(value) + 8 : xFor(value) - 8;
+      ctx.fillText(plNumber(Math.round(value), 0), valueX, y + barHeight / 2);
+      ctx.restore();
+    });
+  }
+
+  function categories(id, cfg) {
+    charts.set(id, { type: "categories", cfg });
+    drawOne(id);
+  }
+
   function drawOne(id) {
     const entry = charts.get(id);
     const canvas = document.getElementById(id);
     if (!entry || !canvas) return;
     if (entry.type === "bar") drawBarChart(canvas, entry.cfg);
+    else if (entry.type === "categories") drawCategories(canvas, entry.cfg);
     else drawLineChart(canvas, entry.cfg);
   }
 
@@ -363,5 +432,5 @@
     window.addEventListener("resize", queueRedraw);
   }
 
-  root.BondCharts = { render, redraw, bar, line };
+  root.BondCharts = { render, redraw, bar, line, categories };
 })(typeof globalThis !== "undefined" ? globalThis : this);

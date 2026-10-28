@@ -37,6 +37,9 @@ python -m http.server 8766
   opłata wg typu (EDO/ROD 3 zł, COI/ROS 2 zł, TOS 1 zł, DOR 0,70 zł, ROR 0,50 zł, OTS 0 zł) jest
   potrącana z odsetek, maks. do ich wysokości; podatek Belki liczony od odsetek po opłacie.
   Stawki potwierdzone w [słowniczku obligacjeskarbowe.pl](https://www.obligacjeskarbowe.pl/slowniczek/).
+- Wersja web: zakładka **Ranking („Co wybrać?”)** — jedna wpłata i wybrany okres; porównanie
+  wszystkich serii z wykupem naturalnym, wcześniejszym wykupem (opłata + Belka po prowizji) lub
+  rolowaniem kapitału; karta rekomendacji, tabela, wykres zysku netto i wnioski.
 - Wersja web: zakładka **Porównanie** — dwa warianty A/B obok siebie, tabela różnic (netto, zysk,
   stopa zwrotu, podatki) i wykres wartości netto w czasie.
 - Wersja web: zakładka **Portfel** — drabina do 8 pozycji z różnymi seriami i miesiącami zakupu,
@@ -93,9 +96,9 @@ builds\kalkulator-obligacji.exe --self-test builds\smoke-test.txt
 ## Struktura
 
 - `web/` — wersja web (HTML/CSS/JS), źródło publikacji na GitHub Pages
-  - `index.html`, `style.css` — układ i style (5 zakładek: Obliczenia, Porównanie, Portfel, Rentier, Wykresy)
-  - `bonds.js` — silnik: `calculate` (pojedyncza seria), `simulate` (portfel/drabina/rentier), dyskonto inflacyjne
-  - `app.js`, `compare.js`, `portfolio.js`, `rentier.js` — moduły interfejsu
+  - `index.html`, `style.css` — układ i style (6 zakładek: Obliczenia, Ranking, Porównanie, Portfel, Rentier, Wykresy)
+  - `bonds.js` — silnik: `calculate` (pojedyncza seria), `simulate` (portfel/drabina/rentier), `rankBonds` (ranking serii), dyskonto inflacyjne
+  - `app.js`, `ranking.js`, `compare.js`, `portfolio.js`, `rentier.js` — moduły interfejsu
   - `ui.js` — formatowanie, stan w URL, zakładki, schowek, PWA
   - `charts.js` — wykresy canvas (rejestr wykresów liniowych i słupkowych)
   - `manifest.webmanifest`, `sw.js`, ikony SVG — tryb offline/PWA (przy każdej publikacji podnieś numer `CACHE` w `sw.js`)

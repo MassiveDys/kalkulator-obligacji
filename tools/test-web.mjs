@@ -120,6 +120,35 @@ try {
 }
 check("Nieznana obligacja: błąd", threw);
 
+/* 8. Ranking „Co wybrać?”. */
+const rank = Bonds.rankBonds({ amount: 100000, years: 2, months: 0, inflation: 3, nbp: 5.75, ike: false });
+check("Ranking: 6 serii bez rodzinnych", rank.results.length === 6, rank.results.length);
+check("Ranking: posortowany malejąco", rank.results.every((item, index) => index === 0 || rank.results[index - 1].net >= item.net));
+check("Ranking: zwycięzca = pozycja 1", rank.winner === rank.results[0] && rank.winner.rank === 1);
+check("Ranking: horyzont 24 mies.", rank.months === 24, rank.months);
+check("Ranking: wszystkie netto > wpłata", rank.results.every((item) => item.net > 100000));
+check("Ranking: DOR 2L wykup naturalny bez opłaty", rank.results.find((x) => x.code === "DOR").modeKey === "natural" && rank.results.find((x) => x.code === "DOR").earlyFee < 0.01);
+check("Ranking: EDO 2L wcześniejszy wykup z opłatą", rank.results.find((x) => x.code === "EDO").modeKey === "early" && rank.results.find((x) => x.code === "EDO").earlyFee > 0);
+check("Ranking: ROR roluje 2 cykle", rank.results.find((x) => x.code === "ROR").modeKey === "roll" && rank.results.find((x) => x.code === "ROR").cycles === 2);
+
+const rankFamily = Bonds.rankBonds({ amount: 100000, years: 2, months: 0, inflation: 3, nbp: 5.75, ike: false, includeFamily: true });
+check("Ranking: 8 serii z rodzinnymi", rankFamily.results.length === 8, rankFamily.results.length);
+check("Ranking: ROS/ROD obecne", rankFamily.results.some((x) => x.code === "ROS") && rankFamily.results.some((x) => x.code === "ROD"));
+
+const rankIke = Bonds.rankBonds({ amount: 100000, years: 2, months: 0, inflation: 3, nbp: 5.75, ike: true });
+check("Ranking: IKE podnosi wynik", rankIke.results.every((item) => item.net >= rank.results.find((x) => x.code === item.code).net));
+
+const rank18 = Bonds.rankBonds({ amount: 50000, years: 1, months: 6, inflation: 3, nbp: 5.75 });
+check("Ranking: okres 18 miesięcy", rank18.months === 18, rank18.months);
+check("Ranking: 1,5 roku to wcześniejszy wykup", rank18.winner.modeKey === "early" || rank18.winner.modeKey === "roll-early");
+
+const rank1 = Bonds.rankBonds({ amount: 100000, years: 1, months: 0, inflation: 3, nbp: 5.75 });
+check("Ranking: ROR 1 rok naturalny", rank1.results.find((x) => x.code === "ROR").modeKey === "natural");
+
+const rank30 = Bonds.rankBonds({ amount: 100000, years: 2, months: 6, inflation: 3, nbp: 5.75 });
+check("Ranking: 2,5 roku — końcówka w gotówce", rank30.results.find((x) => x.code === "ROR").mode.indexOf("gotówka") >= 0, rank30.results.find((x) => x.code === "ROR").mode);
+check("Ranking: 2,5 roku — DOR roluje 1 cykl", rank30.results.find((x) => x.code === "DOR").cycles === 1, rank30.results.find((x) => x.code === "DOR").cycles);
+
 console.log("PASS " + pass + " FAIL " + fails.length);
 fails.forEach((item) => console.log("FAIL: " + item));
 process.exit(fails.length ? 1 : 0);

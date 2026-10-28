@@ -1161,6 +1161,15 @@ tbody tr:hover th {
     grid-column: 4 / span 2;
   }
 
+  /* sześć zakładek: 3 + 3 bez przesunięć */
+  .tab:nth-child(4):nth-last-child(3) {
+    grid-column: span 2;
+  }
+
+  .tab:nth-child(5):nth-last-child(2) {
+    grid-column: span 2;
+  }
+
   .grid-inline {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     max-width: none;
@@ -1184,5 +1193,240 @@ tbody tr:hover th {
 
   .cmp-side {
     padding: 12px;
+  }
+}
+
+/* ---------------------------------------------------------- ranking */
+.quick-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.chip {
+  appearance: none;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 6px 12px;
+  background: #fff;
+  color: var(--accent);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.chip:hover {
+  background: var(--accent-soft);
+  border-color: #c9d8e9;
+}
+
+.winner {
+  border-left: 4px solid var(--green);
+}
+
+.winner[hidden] {
+  display: none;
+}
+
+.winner-head {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.winner-badge {
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: #e6f6ec;
+  color: #147a41;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.winner-mode {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.winner-body {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.winner-name {
+  color: var(--accent);
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.winner-label {
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.winner-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.winner-stat {
+  min-width: 120px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: var(--tile);
+  text-align: center;
+}
+
+.winner-value {
+  display: block;
+  color: var(--accent);
+  font-size: 20px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.winner-stat-label {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.canvas-wrap.canvas-tall {
+  height: 340px;
+}
+
+table .col-rank {
+  width: 46px;
+  text-align: center;
+}
+
+thead th.col-mode {
+  text-align: left;
+}
+
+table .col-series,
+tbody td.col-series {
+  text-align: left;
+}
+
+tbody td.col-rank {
+  text-align: center;
+  color: var(--muted);
+  font-weight: 700;
+}
+
+tbody td.col-series {
+  font-weight: 600;
+}
+
+tbody td.col-mode {
+  text-align: left;
+  white-space: normal;
+  min-width: 190px;
+}
+
+tbody tr.is-winner td {
+  background: #eefaf2;
+}
+
+tbody tr.is-winner td.col-series::before {
+  content: "\2713  ";
+  color: var(--green);
+}
+
+tbody tr.is-winner:hover td {
+  background: #e4f7ea;
+}
+
+.analysis h2 {
+  margin: 0;
+  color: var(--text);
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.analysis p {
+  margin: 8px 0 0;
+  color: var(--text);
+  font-size: 13.5px;
+  line-height: 1.6;
+}
+
+@media (max-width: 640px) {
+  .winner-name {
+    font-size: 20px;
+  }
+
+  .winner-badge {
+    font-size: 10px;
+  }
+
+  .winner-stat {
+    flex: 1 1 0;
+    min-width: 0;
+    padding: 8px 4px;
+  }
+
+  .winner-value {
+    font-size: clamp(12px, 3.8vw, 15px);
+    letter-spacing: -0.01em;
+    white-space: nowrap;
+  }
+
+  .winner-stat-label {
+    font-size: 10.5px;
+    line-height: 1.25;
+  }
+
+  #panel-ranking thead th:nth-child(3),
+  #panel-ranking tbody td:nth-child(3),
+  #panel-ranking thead th:nth-child(7),
+  #panel-ranking tbody td:nth-child(7) {
+    display: none;
+  }
+
+  #panel-ranking tbody td.col-mode {
+    min-width: 120px;
+    font-size: 11.5px;
+  }
+
+  .canvas-wrap.canvas-tall {
+    height: 360px;
+  }
+
+  .quick-row .plan-label {
+    width: 100%;
+  }
+}
+
+.table-hint {
+  display: none;
+  margin: 8px 2px 0;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+@media (max-width: 640px) {
+  #panel-ranking .table-hint {
+    display: block;
+  }
+}
+
+@media (max-width: 360px) {
+  .winner-value {
+    font-size: 11.5px;
   }
 }
