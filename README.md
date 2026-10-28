@@ -4,6 +4,19 @@ Aplikacja desktopowa dla Windows (.exe) do szacowania zysku z regularnego
 kupowania polskich obligacji skarbowych. Pozwala porównać typy obligacji,
 ustawić własne oprocentowanie i sprawdzić wpływ podatku Belki oraz konta IKE.
 
+## Wersja web (online)
+
+**https://massivedys.github.io/kalkulator-obligacji/** — bez instalacji, działa też na telefonie.
+
+Źródło: katalog `web/`; każdy push na `main` uruchamia GitHub Actions i wdraża stronę na Pages.
+Lokalnie:
+
+```powershell
+cd D:\openbot\projects\kalkulator-obligacji\web
+python -m http.server 8766
+# http://127.0.0.1:8766/
+```
+
 ## Funkcje
 
 - 8 typów obligacji: EDO, COI, TOS, DOR, ROR, OTS, ROS, ROD — parametry można edytować.
@@ -59,7 +72,11 @@ builds\kalkulator-obligacji.exe --self-test builds\smoke-test.txt
 
 ## Struktura
 
+- `web/` — wersja web (HTML/CSS/JS), źródło publikacji na GitHub Pages
+- `.github/workflows/pages.yml` — automatyczne wdrożenie `web/` na Pages
 - `src/bonds.py` — silnik obliczeniowy
 - `src/app.py` — GUI (CustomTkinter) i tryb `--self-test`
-- `builds/` — plik .exe i raport testu
+- `builds/` — plik .exe i raport testu (poza repozytorium)
 - `assets/` — ikona i zrzut referencyjny
+
+Repozytorium: https://github.com/MassiveDys/kalkulator-obligacji

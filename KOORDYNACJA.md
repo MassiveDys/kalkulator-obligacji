@@ -60,3 +60,5 @@ Wzorowana na załączonym zrzucie ekranu (nowoczesny interfejs GUI).
   - Implementacja wersji przeglądarkowej w D:\openbot\projects\kalkulator-obligacji\web\ (czysty HTML/CSS/JS, wykresy np. Chart.js lub Canvas/SVG, pełna logika finansowa z src/bonds.py).
   - Publikacja repozytorium na GitHub i konfiguracja GitHub Pages.
   - Zwrócenie działającego publicznego linku URL do strony.
+
+- **Status v1.3 [Coderweb]**: Gotowe - wersja web wdrożona i publiczna: https://massivedys.github.io/kalkulator-obligacji/ (repo: https://github.com/MassiveDys/kalkulator-obligacji)

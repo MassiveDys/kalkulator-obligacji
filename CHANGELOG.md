@@ -1,5 +1,12 @@
 # CHANGELOG — kalkulator-obligacji
 
+## [1.3.0] — 2026-10-28
+- Dodano wersję web (`web/`) w czystym HTML/CSS/JS: pełny port silnika `bonds.py`, 8 typów obligacji, scenariusze marży i inflacji, IKE, tryby wykupów, kafelki, tabela i eksport CSV.
+- Dodano wykresy canvas bez zależności: drabina zapadalności oraz wartość oszczędności na tle wpłat.
+- Dodano responsywny układ (320–1440 px) i obsługę klawiatury w formularzu.
+- Opublikowano na GitHub Pages: https://massivedys.github.io/kalkulator-obligacji/ (workflow `.github/workflows/pages.yml`, źródło `web/`).
+- Dodano `.gitignore` (buildy i cache poza repozytorium).
+
 ## [1.2.0] — 2026-10-28
 - Dodano zakładkę „Wykresy” (matplotlib): terminarz zapadalności transz oraz wartość oszczędności vs wpłaty.
 - Dodano tryb wykupów: „Reinwestuj wykupy” / „Wypłacaj na konto” (domyślnie wypłaty, zgodnie ze zrzutem referencyjnym).
